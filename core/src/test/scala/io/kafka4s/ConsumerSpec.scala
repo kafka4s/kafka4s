@@ -49,7 +49,7 @@ class ConsumerSpec extends FlatSpec with Matchers {
 
   behavior of "RecordConsumer[F]"
 
-  "#orNotFound" should "transform the Consumer in a total function that lifts the record in a Return" in {
+  ".orNotFound" should "transform the Consumer in a total function that lifts the record in a Return" in {
     val consumer = Consumer.of[Id] {
       case _ @ Topic("my-topic-en") => ()
       case _ @ Topic("my-topic-ch") => ()
@@ -57,13 +57,13 @@ class ConsumerSpec extends FlatSpec with Matchers {
 
     for {
       en <- ConsumerRecord.of[Id]("my-topic-en", "Hello, World!")
-      a <- consumer.apply(en).map(_.record.as[String])
+      a <- consumer.apply(en)
 
       cn <- ConsumerRecord.of[Id]("my-topic-ch", "你好，世界")
-      b <- consumer.apply(cn).map(_.record.as[String])
+      b <- consumer.apply(cn)
     } yield {
-      a shouldBe "Hello, World!"
-      b shouldBe "你好，世界"
+      a.record.as[String] shouldBe "Hello, World!"
+      b.record.as[String] shouldBe "你好，世界"
     }
   }
 
