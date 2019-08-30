@@ -2,9 +2,9 @@ package io.kafka4s.serdes
 
 import java.util.UUID
 
-import org.scalatest.{FlatSpec, Matchers}
+import io.kafka4s.test.UnitSpec
 
-class SerdesSpec extends FlatSpec with Matchers {
+class SerdesSpec extends UnitSpec {
 
   def test[T](input: T)(implicit serde: Serde[T]): Either[Throwable, T] = for {
     in <- serde.serialize(input)

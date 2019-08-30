@@ -1,6 +1,7 @@
 package io.kafka4s
 
 import cats.data.NonEmptyList
+import io.kafka4s.consumer.ConsumerRecord
 import io.kafka4s.serdes.SerdeImplicits
 
 package object dsl extends DslImplicits with SerdeImplicits {
@@ -22,14 +23,14 @@ package object dsl extends DslImplicits with SerdeImplicits {
   /**
    * Pattern matching for ConsumerRecord partition
    */
-  object / {
+  object - {
     def unapply[F[_]](record: ConsumerRecord[F]): Option[(Record[F], Int)] = Some(record -> record.partition)
   }
 
   /**
    * Pattern matching for ConsumerRecord offset
    */
-  object & {
+  object at {
     def unapply[F[_]](record: ConsumerRecord[F]): Option[(Record[F], Long)] = Some(record -> record.offset)
   }
 }

@@ -1,9 +1,11 @@
-package io.kafka4s
+package io.kafka4s.consumer
+
 import java.time.Instant
 
-import cats.{ApplicativeError, Monad, Show}
 import cats.implicits._
+import cats.{ApplicativeError, Monad, Show}
 import io.kafka4s.serdes.Serializer
+import io.kafka4s.{Headers, Record}
 
 final case class ConsumerRecord[F[_]](topic: String,
                                       key: Array[Byte],
@@ -47,7 +49,7 @@ object ConsumerRecord {
 
     def apply[K, V](topic: String, key: K, value: V)(implicit F: Monad[F] with ApplicativeError[F, Throwable],
                                                      K: Serializer[K],
-                                                     V: Serializer[V]): F[Record[F]] = for {
+                                                     V: Serializer[V]): F[ConsumerRecord[F]] = for {
       k <- F.fromEither(K.serialize(key))
       v <- F.fromEither(V.serialize(value))
     } yield ConsumerRecord[F](
@@ -62,7 +64,7 @@ object ConsumerRecord {
 
     def apply[K, V](topic: String, key: K, value: V, partition: Int)(implicit F: Monad[F] with ApplicativeError[F, Throwable],
                                                                      K: Serializer[K],
-                                                                     V: Serializer[V]): F[Record[F]] = for {
+                                                                     V: Serializer[V]): F[ConsumerRecord[F]] = for {
       k <- F.fromEither(K.serialize(key))
       v <- F.fromEither(V.serialize(value))
     } yield ConsumerRecord[F](
@@ -77,7 +79,7 @@ object ConsumerRecord {
 
     def apply[K, V](topic: String, key: K, value: V, partition: Int, offset: Long)(implicit F: Monad[F] with ApplicativeError[F, Throwable],
                                                                                    K: Serializer[K],
-                                                                                   V: Serializer[V]): F[Record[F]] = for {
+                                                                                   V: Serializer[V]): F[ConsumerRecord[F]] = for {
       k <- F.fromEither(K.serialize(key))
       v <- F.fromEither(V.serialize(value))
     } yield ConsumerRecord[F](

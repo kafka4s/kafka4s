@@ -1,28 +1,29 @@
-package io.kafka4s
+package io.kafka4s.producer
 
-import cats.{ApplicativeError, Monad}
 import cats.data.Kleisli
 import cats.implicits._
+import cats.{ApplicativeError, Monad}
+import io.kafka4s.Header
 import io.kafka4s.serdes.Serializer
 
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 
 trait Producer[F[_]] {
-  def send1: Kleisli[F, ProducerRecord[F], ProducerRecord[F]]
-
+  def send1: Kleisli[F, ProducerRecord[F], Return[F]]
+  
   def keyTypeHeaderName: String = "X-Key-ClassName"
   def valueTypeHeaderName: String = "X-Value-ClassName"
 
   def send[V](message: (String, V))(implicit F: Monad[F] with ApplicativeError[F, Throwable],
                                     SV: Serializer[V],
-                                    TV: TypeTag[V]): F[ProducerRecord[F]] = {
+                                    TV: TypeTag[V]): F[Return[F]] = {
     val (topic, value) = message
     send(topic, value)
   }
 
   def send[V](topic: String, value: V)(implicit F: Monad[F] with ApplicativeError[F, Throwable],
                                        SV: Serializer[V],
-                                       TV: TypeTag[V]): F[ProducerRecord[F]] =
+                                       TV: TypeTag[V]): F[Return[F]] =
     for {
       vb <- F.fromEither(SV.serialize(value))
       tv <- Header.of[F](valueTypeHeaderName, typeOf[V].typeSymbol.fullName)
@@ -34,7 +35,7 @@ trait Producer[F[_]] {
                                                   SK: Serializer[K],
                                                   SV: Serializer[V],
                                                   TK: TypeTag[K],
-                                                  TV: TypeTag[V]): F[ProducerRecord[F]] =
+                                                  TV: TypeTag[V]): F[Return[F]] =
     for {
       kb <- F.fromEither(SK.serialize(key))
       vb <- F.fromEither(SV.serialize(value))
@@ -48,7 +49,7 @@ trait Producer[F[_]] {
                                                                   SK: Serializer[K],
                                                                   SV: Serializer[V],
                                                                   TK: TypeTag[K],
-                                                                  TV: TypeTag[V]): F[ProducerRecord[F]] =
+                                                                  TV: TypeTag[V]): F[Return[F]] =
     for {
       kb <- F.fromEither(SK.serialize(key))
       vb <- F.fromEither(SV.serialize(value))

@@ -1,14 +1,12 @@
-package io.kafka4s
+package io.kafka4s.consumer
 
-import cats.{ApplicativeError, Monad}
 import cats.data.{Kleisli, OptionT}
-import io.kafka4s.Return.{Ack, Err}
+import cats.{ApplicativeError, Monad, Show}
+import io.kafka4s.consumer.Return.{Ack, Err}
 
 import scala.util.control.NonFatal
 
 object Consumer {
-  final case class TopicNotFound(topic: String) extends RuntimeException(s"Consumer not found for topic '$topic'")
-
   def of[F[_]: Monad](pf: PartialFunction[ConsumerRecord[F], F[Unit]]): Consumer[F] =
     Kleisli(record => pf.andThen(OptionT.liftF(_)).applyOrElse(record, Function.const(OptionT.none)))
 
@@ -24,4 +22,7 @@ object Consumer {
           case NonFatal(ex) => Err(record, ex)
         }
     )
+
+  implicit def show[F[_]](implicit S: Show[ConsumerRecord[F]]): Show[Return[F]] =
+    (`return`: Return[F]) => S.show(`return`.record)
 }

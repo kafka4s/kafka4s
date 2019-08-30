@@ -1,10 +1,10 @@
 package io.kafka4s
 
+import java.util.Base64
+
 import cats.data.OptionT
 import cats.{ApplicativeError, Monad, Show}
 import io.kafka4s.serdes.Deserializer
-
-import scala.util.hashing.MurmurHash3
 
 trait Record[F[_]] {
   def topic: String
@@ -30,12 +30,12 @@ trait Record[F[_]] {
     F.fromEither(D.deserialize(key))
 
   def size: Int = key.length + value.length + headers.size
-
-  override def toString(): String = {
-    s"[$topic%${MurmurHash3.bytesHash(key ++ value)}]"
-  }
 }
 
 object Record { self =>
-  implicit def show[F[_]]: Show[Record[F]] = _.toString()
+
+  private val b64 = Base64.getUrlEncoder.withoutPadding()
+
+  implicit def show[F[_]]: Show[Record[F]] = (record) =>
+    s"[${record.topic}#${b64.encodeToString(record.key ++ record.value)}]"
 }

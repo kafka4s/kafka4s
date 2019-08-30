@@ -1,15 +1,24 @@
 package io.kafka4s
 
-import cats.ApplicativeError
+import java.util.Base64
+
+import cats.{ApplicativeError, Eq, Show}
 import cats.implicits._
 import io.kafka4s.serdes.{Deserializer, Serializer}
 import org.apache.kafka.common.header.{Header => ApacheKafkaHeader}
+
+import scala.util.hashing.MurmurHash3
 
 final case class Header[F[_]](key: String, value: Array[Byte]) {
   def as[V](implicit F: ApplicativeError[F, Throwable], D: Deserializer[V]): F[V] =
     F.fromEither(D.deserialize(value))
   
-  def size: Int = value.length
+  val size: Int = key.getBytes.length + value.length
+
+  override def toString: String = s"Header(${Show[Header[F]].show(this)})"
+
+  override def hashCode(): Int =
+    MurmurHash3.bytesHash(key.getBytes ++ value)
 }
 
 object Header {
@@ -27,4 +36,11 @@ object Header {
   }
 
   def of[F[_]] = new HeaderPartiallyApplied[F]
+
+  private val b64 = Base64.getUrlEncoder.withoutPadding()
+
+  implicit def show[F[_]]: Show[Header[F]] =
+    header => s"${header.key} -> ${b64.encodeToString(header.value)}"
+  
+  implicit def eq[F[_]]: Eq[Header[F]] = (x, y) => x.hashCode() == y.hashCode()
 }

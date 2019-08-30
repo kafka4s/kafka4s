@@ -1,9 +1,9 @@
 package io.kafka4s.serdes
 
-import cats.syntax.either._
 import java.nio.ByteBuffer
-import java.nio.charset.StandardCharsets
 import java.util.UUID
+
+import cats.syntax.either._
 
 private[kafka4s] trait SerdeImplicits {
   implicit val floatSerde: Serde[Float] = new Serde[Float] {
@@ -48,10 +48,10 @@ private[kafka4s] trait SerdeImplicits {
 
   implicit val stringSerde: Serde[String] = new Serde[String] {
     override def deserialize(value: Array[Byte]): Result[String] =
-      Either.catchNonFatal(new String(value, StandardCharsets.UTF_8))
+      Either.catchNonFatal(new String(value))
 
     override def serialize(value: String): Result[Array[Byte]] =
-      Either.catchNonFatal(value.getBytes(StandardCharsets.UTF_8))
+      Either.catchNonFatal(value.getBytes())
   }
 
   implicit val bytesSerde: Serde[Array[Byte]] = new Serde[Array[Byte]] {

@@ -1,25 +1,15 @@
-package io.kafka4s
+package io.kafka4s.consumer
 
-import cats.{ApplicativeError, Id}
+import cats.Id
 import cats.implicits._
-import io.kafka4s.Consumer.TopicNotFound
 import io.kafka4s.dsl._
-import org.scalatest.{FlatSpec, Matchers}
+import io.kafka4s.test.UnitSpec
 
-class ConsumerSpec extends FlatSpec with Matchers {
+class ConsumerSpec extends UnitSpec {
   type Test[A] = Either[Throwable, A]
 
   def eitherTest[A](fa: Test[A]): A = {
     fa.fold(ex => fail(ex.getMessage), identity)
-  }
-
-  implicit val applicativeError = new ApplicativeError[Id, Throwable] {
-    def raiseError[A](e: Throwable): Id[A] = throw e
-    def handleErrorWith[A](fa: Id[A])(f: Throwable => Id[A]): Id[A] = try fa catch {
-      case e: Throwable => f(e)
-    }
-    def pure[A](x: A): Id[A] = x
-    def ap[A, B](ff: Id[A => B])(fa: Id[A]): Id[B] = ff(fa)
   }
 
   "#of" should "wrap a partial function in a Kleisli that may consume a record" in {
