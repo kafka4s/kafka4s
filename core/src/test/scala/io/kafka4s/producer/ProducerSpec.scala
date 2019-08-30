@@ -28,19 +28,19 @@ class ProducerSpec extends UnitSpec {
   }
 
   it should "create a record from a tupled topic and value and add the value class name header" ignore {
-    val r = producer.send(topic -> hello)
-    r.record.topic shouldBe topic
-    r.record.as[String] shouldBe hello
-    r.record.headers.values should contain (Header.of[Id](producer.valueTypeHeaderName, "java.lang.String"))
+    val ack = producer.send(topic -> hello)
+    ack.record.topic shouldBe topic
+    ack.record.as[String] shouldBe hello
+    ack.record.headers.values should contain (Header.of[Id](producer.valueTypeHeaderName, "java.lang.String"))
   }
 
   it should "create a record from topic, key and value and add the class name headers" ignore {
-    val r = producer.send(topic, id, hello)
-    r.record.topic shouldBe topic
-    r.record.keyAs[Long] shouldBe id
-    r.record.as[String] shouldBe hello
+    val ack = producer.send(topic, id, hello)
+    ack.record.topic shouldBe topic
+    ack.record.keyAs[Long] shouldBe id
+    ack.record.as[String] shouldBe hello
 
-    r.record.headers.values should contain allOf (
+    ack.record.headers.values should contain allOf (
       Header.of[Id](producer.keyTypeHeaderName, "scala.Long"),
       Header.of[Id](producer.valueTypeHeaderName, "java.lang.String")
     )
