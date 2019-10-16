@@ -5,13 +5,20 @@ import cats.{ApplicativeError, Monad, Show}
 import io.kafka4s.serdes.Serializer
 import io.kafka4s.{Header, Headers, Record}
 
+import scala.util.hashing.MurmurHash3
+
 final case class ProducerRecord[F[_]](topic: String,
                                       key: Array[Byte]           = Array.emptyByteArray,
                                       value: Array[Byte]         = Array.emptyByteArray,
                                       headers: Headers[F]        = Headers.empty[F],
                                       partition: Option[Int]     = None) extends Record[F] {
 
-  def add(header: Header[F]*): ProducerRecord[F] = this.copy(headers = headers.add(header: _*))
+  def put(header: Header[F]*): ProducerRecord[F] = this.copy(headers = headers ++ Headers[F](header.toList))
+
+  override def toString: String = s"ProducerRecord(${this.show})"
+
+  override def hashCode(): Int =
+    MurmurHash3.bytesHash(key ++ value)
 }
 
 object ProducerRecord {

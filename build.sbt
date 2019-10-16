@@ -14,13 +14,27 @@ lazy val kafka4s = project.in(file("."))
     skip in publish := true,
     description := "A minimal Scala-idiomatic library for Kafka",
   )
-  .aggregate(core)
+  .aggregate(core, effect)
 
 lazy val core = project.in(file("core"))
   .settings(
-    commonSettings
+    commonSettings,
+    libraryDependencies ++= Seq(
+      "org.apache.kafka"    % "kafka-clients"        % "2.3.0",
+      "org.typelevel"      %% "cats-core"            % "1.6.0",
+    )
   )
 
+lazy val effect = project.in(file("effect"))
+  .dependsOn(core)
+  .settings(
+    commonSettings,
+    libraryDependencies ++= Seq(
+      "org.typelevel"      %% "cats-effect"          % "1.4.0",
+      "org.slf4j"          % "slf4j-api"             % "1.7.25",
+      "ch.qos.logback"     % "logback-classic"       % "1.2.3",
+    )
+  )
 
 lazy val commonSettings = Seq(
   fork in Test := true,
@@ -28,17 +42,8 @@ lazy val commonSettings = Seq(
   parallelExecution in Test := false,
   parallelExecution in IntegrationTest := false,
   libraryDependencies ++= Seq(
-    "org.apache.kafka"    % "kafka-clients"        % "2.3.0",
-
-    "org.typelevel"      %% "cats-core"            % "1.6.0",
-    "org.typelevel"      %% "cats-effect"          % "1.4.0",
-
-    "org.slf4j"          % "slf4j-api"             % "1.7.25",
-    "ch.qos.logback"     % "logback-classic"       % "1.2.3",
-
-    "org.scalatest"      %% "scalatest"            % "3.0.5" % s"$Test,$IntegrationTest",
-    "org.scalamock"      %% "scalamock"            % "4.2.0" % s"$Test,$IntegrationTest",
-    
+    "org.scalatest"      %% "scalatest"            % "3.0.5" % Test,
+    "org.scalamock"      %% "scalamock"            % "4.2.0" % Test,
     compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
     compilerPlugin("org.spire-math" %% "kind-projector" % "0.9.6"),
   ),

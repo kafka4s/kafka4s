@@ -4,6 +4,7 @@ import cats.data.Kleisli
 import cats.implicits._
 import cats.{ApplicativeError, Monad}
 import io.kafka4s.Header
+import io.kafka4s.consumer.ConsumerRecord
 import io.kafka4s.serdes.Serializer
 
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
@@ -27,7 +28,7 @@ trait Producer[F[_]] {
     for {
       vb <- F.fromEither(SV.serialize(value))
       tv <- Header.of[F](valueTypeHeaderName, typeOf[V].typeSymbol.fullName)
-      p = ProducerRecord[F](topic, value = vb).add(tv)
+      p = ProducerRecord[F](topic, value = vb).put(tv)
       r <- send1(p)
     } yield r
 
@@ -41,7 +42,7 @@ trait Producer[F[_]] {
       vb <- F.fromEither(SV.serialize(value))
       tk <- Header.of[F](keyTypeHeaderName, typeOf[K].typeSymbol.fullName)
       tv <- Header.of[F](valueTypeHeaderName, typeOf[V].typeSymbol.fullName)
-      p = ProducerRecord[F](topic, key = kb, value = vb).add(tv, tk)
+      p = ProducerRecord[F](topic, key = kb, value = vb).put(tv, tk)
       r <- send1(p)
     } yield r
 
@@ -55,7 +56,17 @@ trait Producer[F[_]] {
       vb <- F.fromEither(SV.serialize(value))
       tk <- Header.of[F](keyTypeHeaderName, typeOf[K].typeSymbol.fullName)
       tv <- Header.of[F](valueTypeHeaderName, typeOf[V].typeSymbol.fullName)
-      p = ProducerRecord[F](topic, partition = Some(partition), key = kb, value = vb).add(tv, tk)
+      p = ProducerRecord[F](topic, partition = Some(partition), key = kb, value = vb).put(tv, tk)
       r <- send1(p)
     } yield r
+
+  def send(record: ConsumerRecord[F]): F[Return[F]] = {
+    send1(ProducerRecord[F](
+      topic     = record.topic,
+      key       = record.key,
+      value     = record.value,
+      headers   = record.headers,
+      partition = Some(record.partition),
+    ))
+  }
 }

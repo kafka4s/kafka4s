@@ -15,7 +15,11 @@ final case class Header[F[_]](key: String, value: Array[Byte]) {
   
   val size: Int = key.getBytes.length + value.length
 
-  override def toString: String = s"Header(${Show[Header[F]].show(this)})"
+  override def toString: String = s"Header(${this.show})"
+
+  override def equals(obj: Any): Boolean = {
+    obj.isInstanceOf[this.type] && obj.hashCode() == this.hashCode()
+  }
 
   override def hashCode(): Int =
     MurmurHash3.bytesHash(key.getBytes ++ value)

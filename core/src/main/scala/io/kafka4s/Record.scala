@@ -18,7 +18,7 @@ trait Record[F[_]] {
   def header[T](key: String)
                (implicit F: Monad[F] with ApplicativeError[F, Throwable], D: Deserializer[T]): F[Option[T]] = {
     for {
-      h <- OptionT.fromOption[F](headers.find(key))
+      h <- OptionT.fromOption[F](headers.find(_.key == key))
       t <- OptionT.liftF(F.fromEither(D.deserialize(h.value)))
     } yield t
   }.value

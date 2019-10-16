@@ -7,13 +7,21 @@ import cats.{ApplicativeError, Monad, Show}
 import io.kafka4s.serdes.Serializer
 import io.kafka4s.{Headers, Record}
 
+import scala.util.hashing.MurmurHash3
+
 final case class ConsumerRecord[F[_]](topic: String,
                                       key: Array[Byte],
                                       value: Array[Byte],
                                       headers: Headers[F],
                                       offset: Long,
                                       partition: Int,
-                                      timestamp: Instant) extends Record[F]
+                                      timestamp: Instant) extends Record[F] {
+
+  override def toString: String = s"ConsumerRecord(${this.show})"
+
+  override def hashCode(): Int =
+    MurmurHash3.bytesHash(key ++ value)
+}
 
 object ConsumerRecord {
   def apply[F[_]](record: DefaultConsumerRecord): ConsumerRecord[F] =

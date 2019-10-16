@@ -1,4 +1,4 @@
-package io.kafka4s.log
+package io.kafka4s.effect.log
 
 import cats.{Applicative, Apply, Monoid}
 
