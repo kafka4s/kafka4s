@@ -2,40 +2,33 @@ package io.kafka4s
 
 import java.util.Base64
 
-import cats.data.OptionT
-import cats.{ApplicativeError, Monad, Show}
+import cats.implicits._
+import cats.{ApplicativeError, Show}
 import io.kafka4s.serdes.Deserializer
 
 trait Record[F[_]] {
   def topic: String
 
-  def key: Array[Byte]
+  def keyBytes: Array[Byte]
 
-  def value: Array[Byte]
+  def valueBytes: Array[Byte]
 
   def headers: Headers[F]
 
-  def header[T](key: String)
-               (implicit F: Monad[F] with ApplicativeError[F, Throwable], D: Deserializer[T]): F[Option[T]] = {
-    for {
-      h <- OptionT.fromOption[F](headers.find(_.key == key))
-      t <- OptionT.liftF(F.fromEither(D.deserialize(h.value)))
-    } yield t
-  }.value
+  def header[T](key: String)(implicit F: ApplicativeError[F, Throwable], D: Deserializer[T]): F[Option[T]] =
+    headers.find(_.key == key).traverse(_.as[T])
 
   def as[T](implicit F: ApplicativeError[F, Throwable], D: Deserializer[T]): F[T] =
-    F.fromEither(D.deserialize(value))
+    F.fromEither(D.deserialize(valueBytes))
 
-  def keyAs[T](implicit F: ApplicativeError[F, Throwable], D: Deserializer[T]): F[T] =
-    F.fromEither(D.deserialize(key))
-
-  def size: Int = key.length + value.length + headers.size
+  def key[T](implicit F: ApplicativeError[F, Throwable], D: Deserializer[T]): F[T] =
+    F.fromEither(D.deserialize(keyBytes))
 }
 
-object Record { self =>
+object Record {
 
   private val b64 = Base64.getUrlEncoder.withoutPadding()
 
-  implicit def show[F[_]]: Show[Record[F]] = (record) =>
-    s"[${record.topic}#${b64.encodeToString(record.key ++ record.value)}]"
+  implicit def show[F[_]]: Show[Record[F]] =
+    (record) => s"[${record.topic}#${b64.encodeToString(record.keyBytes ++ record.valueBytes)}]"
 }

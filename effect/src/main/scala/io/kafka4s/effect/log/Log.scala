@@ -3,8 +3,8 @@ package io.kafka4s.effect.log
 import cats.{Applicative, Apply, Monoid}
 
 /**
- * Suspend log side effects allowing monadic composition in terms of an effect.
- */
+  * Suspend log side effects allowing monadic composition in terms of an effect.
+  */
 trait Log[F[_]] { self =>
   protected def log(logger: Logger[F], message: Message): F[Unit]
 
@@ -14,11 +14,20 @@ trait Log[F[_]] { self =>
   @inline def warn(message: String)(implicit logger: Logger[F]): F[Unit]  = log(logger, Level.Warn(message, None))
   @inline def error(message: String)(implicit logger: Logger[F]): F[Unit] = log(logger, Level.Error(message, None))
 
-  @inline def trace(message: String, ex: Throwable)(implicit logger: Logger[F]): F[Unit] = log(logger, Level.Trace(message, Some(ex)))
-  @inline def debug(message: String, ex: Throwable)(implicit logger: Logger[F]): F[Unit] = log(logger, Level.Debug(message, Some(ex)))
-  @inline def info(message: String, ex: Throwable)(implicit logger: Logger[F]): F[Unit]  = log(logger, Level.Info(message, Some(ex)))
-  @inline def warn(message: String, ex: Throwable)(implicit logger: Logger[F]): F[Unit]  = log(logger, Level.Warn(message, Some(ex)))
-  @inline def error(message: String, ex: Throwable)(implicit logger: Logger[F]): F[Unit] = log(logger, Level.Error(message, Some(ex)))
+  @inline def trace(message: String, ex: Throwable)(implicit logger: Logger[F]): F[Unit] =
+    log(logger, Level.Trace(message, Some(ex)))
+
+  @inline def debug(message: String, ex: Throwable)(implicit logger: Logger[F]): F[Unit] =
+    log(logger, Level.Debug(message, Some(ex)))
+
+  @inline def info(message: String, ex: Throwable)(implicit logger: Logger[F]): F[Unit] =
+    log(logger, Level.Info(message, Some(ex)))
+
+  @inline def warn(message: String, ex: Throwable)(implicit logger: Logger[F]): F[Unit] =
+    log(logger, Level.Warn(message, Some(ex)))
+
+  @inline def error(message: String, ex: Throwable)(implicit logger: Logger[F]): F[Unit] =
+    log(logger, Level.Error(message, Some(ex)))
 
   def andThen(that: Log[F])(implicit ap: Apply[F]): Log[F] =
     (logger: Logger[F], message: Message) => ap.productR(self.log(logger, message))(that.log(logger, message))

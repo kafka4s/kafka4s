@@ -6,10 +6,11 @@ import io.kafka4s.test.UnitSpec
 
 class SerdesSpec extends UnitSpec {
 
-  def test[T](input: T)(implicit serde: Serde[T]): Either[Throwable, T] = for {
-    in <- serde.serialize(input)
-    out <- serde.deserialize(in)
-  } yield out
+  def test[T](input: T)(implicit serde: Serde[T]): Either[Throwable, T] =
+    for {
+      in  <- serde.serialize(input)
+      out <- serde.deserialize(in)
+    } yield out
 
   it should "should encode/decode a Float" in {
     test[Float](1.0f) shouldBe Right(1.0f)

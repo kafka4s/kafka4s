@@ -3,9 +3,20 @@ package io.kafka4s.serdes
 import java.nio.ByteBuffer
 import java.util.UUID
 
-import cats.syntax.either._
+import cats.implicits._
 
 private[kafka4s] trait SerdeImplicits {
+  implicit def optionSerde[T](implicit serde: Serde[T]): Serde[Option[T]] = new Serde[Option[T]] {
+    override def deserialize(value: Array[Byte]): Result[Option[T]] =
+      Option(value).filter(_.nonEmpty).traverse(serde.deserialize)
+
+    override def serialize(value: Option[T]): Result[Array[Byte]] =
+      value match {
+        case Some(v) => serde.serialize(v)
+        case None    => null
+      }
+  }
+
   implicit val floatSerde: Serde[Float] = new Serde[Float] {
     override def deserialize(value: Array[Byte]): Result[Float] =
       Either.catchNonFatal(ByteBuffer.wrap(value).getFloat)
@@ -61,10 +72,11 @@ private[kafka4s] trait SerdeImplicits {
   }
 
   implicit def uuidSerde(implicit S: Serde[String]): Serde[UUID] = new Serde[UUID] {
-    override def deserialize(value: Array[Byte]): Result[UUID] = for {
-      str <- S.deserialize(value)
-      uuid <- Either.catchNonFatal(UUID.fromString(str))
-    } yield uuid
+    override def deserialize(value: Array[Byte]): Result[UUID] =
+      for {
+        str  <- S.deserialize(value)
+        uuid <- Either.catchNonFatal(UUID.fromString(str))
+      } yield uuid
 
     override def serialize(value: UUID): Result[Array[Byte]] =
       S.serialize(value.toString)

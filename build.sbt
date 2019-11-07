@@ -5,7 +5,8 @@ ThisBuild / version                := "0.1.0"
 ThisBuild / organization           := "io.kafka4s"
 ThisBuild / organizationName       := "Kafka4s"
 ThisBuild / turbo                  := true
-ThisBuild / concurrentRestrictions := Seq(Tags.limitAll(1))
+
+Global / concurrentRestrictions := Seq(Tags.limitAll(1))
 
 lazy val kafka4s = project.in(file("."))
   .settings(

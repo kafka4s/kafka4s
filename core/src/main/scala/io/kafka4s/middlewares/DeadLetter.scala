@@ -34,19 +34,19 @@ object DeadLetter {
   def defaultName[F[_]]: Err[F] => String = (err: Err[F]) => s"${err.record.topic}-dlq"
 
   /** Gets a short message summarising the exception in the form
-   * {ClassNameWithoutPackage}: {ThrowableMessage}
-   *
-   * Extracted from org.apache.commons.lang3.exception.ExceptionUtils.getMessage
-   */
+    * {ClassNameWithoutPackage}: {ThrowableMessage}
+    *
+    * Extracted from org.apache.commons.lang3.exception.ExceptionUtils.getMessage
+    */
   def getMessage(throwable: Throwable): String = Option(throwable).fold("") { e =>
     s"${e.getClass.getSimpleName}: ${e.getMessage}"
   }
 
   /** Throw a checked exception without adding the exception to the throws
-   * clause of the calling method.
-   *
-   * Extracted from org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace
-   */
+    * clause of the calling method.
+    *
+    * Extracted from org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace
+    */
   def getStackTrace(throwable: Throwable): String = {
     val sw = new StringWriter
     val pw = new PrintWriter(sw, true)

@@ -5,9 +5,9 @@ trait Serializer[T] {
 }
 
 object Serializer {
-  implicit def apply[T](implicit S: Serializer[T]): Serializer[T] = S
+  def apply[T](implicit S: Serializer[T]): Serializer[T] = S
 
-  implicit def apply[T](implicit S: Serde[T]): Serializer[T] = new Serializer[T] {
+  def apply[T](implicit S: Serde[T]): Serializer[T] = new Serializer[T] {
     def serialize(value: T): Result[Array[Byte]] = S.serialize(value)
   }
 }

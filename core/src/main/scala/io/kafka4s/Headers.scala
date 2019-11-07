@@ -36,38 +36,38 @@ final class Headers[F[_]] private (private val headers: List[Header[F]]) extends
     headers.count(f)
 
   /** Attempt to get a [[io.kafka4s.Header]] from this collection of headers
-   *
-   * @param key name of the header to find
-   * @return a scala.Option possibly containing the resulting [[io.kafka4s.Header]]
-   */
+    *
+    * @param key name of the header to find
+    * @return a scala.Option possibly containing the resulting [[io.kafka4s.Header]]
+    */
   def get(key: String): Option[Header[F]] = headers.find(_.key == key)
 
   /** Make a new collection adding the specified headers, replacing existing headers of singleton type
-   * The passed headers are assumed to contain no duplicate Singleton headers.
-   *
-   * @param in multiple [[Header]] to append to the new collection
-   * @return a new [[Headers]] containing the sum of the initial and input headers
-   */
+    * The passed headers are assumed to contain no duplicate Singleton headers.
+    *
+    * @param in multiple [[Header]] to append to the new collection
+    * @return a new [[Headers]] containing the sum of the initial and input headers
+    */
   def put(in: Header[F]*): Headers[F] =
     if (in.isEmpty) this
     else if (this.isEmpty) new Headers[F](in.toList)
     else this ++ Headers[F](in.toList)
 
   /** Concatenate the two collections
-   * If the resulting collection is of Headers type, duplicate Singleton headers will be removed from
-   * this Headers collection.
-   *
-   * @param that collection to append
-   */
+    * If the resulting collection is of Headers type, duplicate Singleton headers will be removed from
+    * this Headers collection.
+    *
+    * @param that collection to append
+    */
   def ++(that: Headers[F]): Headers[F] =
     if (that.isEmpty) this
     else if (this.isEmpty) that
     else {
-      val hs = that.toList
+      val hs  = that.toList
       val acc = new ListBuffer[Header[F]]
       this.headers.foreach {
         case h if !hs.exists(_.key == h.key) => acc += h
-        case _ => // NOOP, drop non recurring header that already exists
+        case _                               => // NOOP, drop non recurring header that already exists
       }
 
       val h = new Headers[F](acc.prependToList(hs))
