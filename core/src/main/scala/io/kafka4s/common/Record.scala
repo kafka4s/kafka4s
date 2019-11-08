@@ -1,4 +1,4 @@
-package io.kafka4s
+package io.kafka4s.common
 
 import java.util.Base64
 

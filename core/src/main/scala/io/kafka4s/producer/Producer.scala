@@ -7,6 +7,9 @@ import io.kafka4s.consumer.ConsumerRecord
 import io.kafka4s.serdes.Serializer
 
 trait Producer[F[_]] {
+  /**
+   * The sent side-effect of the producer record
+   */
   def send1: Kleisli[F, ProducerRecord[F], Return[F]]
 
   final def send[V](message: (String, V))(implicit F: MonadError[F, Throwable], SV: Serializer[V]): F[Return[F]] = {

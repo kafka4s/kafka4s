@@ -1,9 +1,9 @@
-package io.kafka4s
+package io.kafka4s.common
 
 import java.util.Base64
 
-import cats.{ApplicativeError, Eq, Show}
 import cats.implicits._
+import cats.{ApplicativeError, Eq, Show}
 import io.kafka4s.serdes.{Deserializer, Serializer}
 import org.apache.kafka.common.header.{Header => ApacheKafkaHeader}
 

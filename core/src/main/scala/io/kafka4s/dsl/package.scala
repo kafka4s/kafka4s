@@ -1,6 +1,7 @@
 package io.kafka4s
 
 import cats.data.NonEmptyList
+import io.kafka4s.common.Record
 import io.kafka4s.consumer.ConsumerRecord
 import io.kafka4s.serdes.SerdeImplicits
 

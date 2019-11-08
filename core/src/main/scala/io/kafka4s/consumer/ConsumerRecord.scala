@@ -4,8 +4,8 @@ import java.time.Instant
 
 import cats.implicits._
 import cats.{ApplicativeError, Monad, Show}
+import io.kafka4s.common.{Headers, Record}
 import io.kafka4s.serdes.Serializer
-import io.kafka4s.{Headers, Record}
 
 import scala.util.hashing.MurmurHash3
 

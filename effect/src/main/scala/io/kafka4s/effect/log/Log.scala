@@ -5,8 +5,8 @@ import cats.{Applicative, Apply, Monoid}
 /**
   * Suspend log side effects allowing monadic composition in terms of an effect.
   */
-trait Log[F[_]] { self =>
-  protected def log(logger: Logger[F], message: Message): F[Unit]
+class Log[F[_]] { self =>
+  protected def log(logger: Logger[F], message: Message): F[Unit] = logger.log(message)
 
   @inline def trace(message: String)(implicit logger: Logger[F]): F[Unit] = log(logger, Level.Trace(message, None))
   @inline def debug(message: String)(implicit logger: Logger[F]): F[Unit] = log(logger, Level.Debug(message, None))
@@ -29,14 +29,18 @@ trait Log[F[_]] { self =>
   @inline def error(message: String, ex: Throwable)(implicit logger: Logger[F]): F[Unit] =
     log(logger, Level.Error(message, Some(ex)))
 
-  def andThen(that: Log[F])(implicit ap: Apply[F]): Log[F] =
-    (logger: Logger[F], message: Message) => ap.productR(self.log(logger, message))(that.log(logger, message))
+  def andThen(that: Log[F])(implicit ap: Apply[F]): Log[F] = new Log[F] {
+    override protected def log(logger: Logger[F], message: Message): F[Unit] =
+      ap.productR(self.log(logger, message))(that.log(logger, message))
+  }
 }
 
 object Log {
-  implicit def apply[F[_]]: Log[F] = (logger: Logger[F], message: Message) => logger.log(message)
+  implicit def apply[F[_]]: Log[F] = new Log[F]
 
-  def void[F[_]](implicit F: Applicative[F]): Log[F] = (_: Logger[F], _: Message) => F.unit
+  def void[F[_]](implicit F: Applicative[F]): Log[F] = new Log[F] {
+    override protected def log(logger: Logger[F], message: Message): F[Unit] = F.unit
+  }
 
   implicit def monoidInstanceForLogger[F[_]](implicit F: Applicative[F]): Monoid[Log[F]] = new Monoid[Log[F]] {
     def empty: Log[F] = Log.void

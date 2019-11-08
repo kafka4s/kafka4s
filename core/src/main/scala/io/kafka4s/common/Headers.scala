@@ -1,4 +1,4 @@
-package io.kafka4s
+package io.kafka4s.common
 
 import cats.implicits._
 import cats.{Eval, Foldable, Monoid, Show}
@@ -35,10 +35,10 @@ final class Headers[F[_]] private (private val headers: List[Header[F]]) extends
   def count(f: Header[F] => Boolean): Int =
     headers.count(f)
 
-  /** Attempt to get a [[io.kafka4s.Header]] from this collection of headers
+  /** Attempt to get a [[Header]] from this collection of headers
     *
     * @param key name of the header to find
-    * @return a scala.Option possibly containing the resulting [[io.kafka4s.Header]]
+    * @return a scala.Option possibly containing the resulting [[Header]]
     */
   def get(key: String): Option[Header[F]] = headers.find(_.key == key)
 

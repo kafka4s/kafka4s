@@ -2,8 +2,8 @@ package io.kafka4s.producer
 
 import cats.implicits._
 import cats.{ApplicativeError, Monad, Show}
+import io.kafka4s.common.{Header, Headers, Record}
 import io.kafka4s.serdes.Serializer
-import io.kafka4s.{Header, Headers, Record}
 
 import scala.util.hashing.MurmurHash3
 
