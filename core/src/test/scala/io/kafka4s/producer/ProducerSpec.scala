@@ -18,7 +18,7 @@ class ProducerSpec extends UnitSpec {
 
     // Just return an ack for testing
     def send1: Kleisli[Id, ProducerRecord[Id], Return[Id]] =
-      Kleisli(Ack(_, 0, 0L, Instant.now()).asInstanceOf[Id[Return[Id]]])
+      Kleisli(Ack(_, 0, Some(0L), Some(Instant.now())).asInstanceOf[Id[Return[Id]]])
   }
 
   ".send" should "create a record from a topic and value" in {

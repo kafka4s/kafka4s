@@ -45,13 +45,14 @@ object ProducerRecord {
                                           S: Serializer[T]): F[ProducerRecord[F]] =
       for {
         v <- F.fromEither(S.serialize(value))
-      } yield ProducerRecord[F](
-        topic,
-        keyBytes   = null,
-        valueBytes = v,
-        headers    = Headers.empty[F],
-        partition  = None
-      )
+      } yield
+        ProducerRecord[F](
+          topic,
+          keyBytes   = null,
+          valueBytes = v,
+          headers    = Headers.empty[F],
+          partition  = None
+        )
 
     def apply[K, V](topic: String, key: K, value: V)(implicit F: Monad[F] with ApplicativeError[F, Throwable],
                                                      K: Serializer[K],
@@ -59,28 +60,30 @@ object ProducerRecord {
       for {
         k <- F.fromEither(K.serialize(key))
         v <- F.fromEither(V.serialize(value))
-      } yield ProducerRecord[F](
-        topic,
-        keyBytes   = k,
-        valueBytes = v,
-        headers    = Headers.empty[F],
-        partition  = None
-      )
+      } yield
+        ProducerRecord[F](
+          topic,
+          keyBytes   = k,
+          valueBytes = v,
+          headers    = Headers.empty[F],
+          partition  = None
+        )
 
-    def apply[K, V](topic: String, key: K, value: V, partition: Int)(implicit F: Monad[F]
-                                                                       with ApplicativeError[F, Throwable],
-                                                                     K: Serializer[K],
-                                                                     V: Serializer[V]): F[ProducerRecord[F]] =
+    def apply[K, V](topic: String, key: K, value: V, partition: Int)(
+      implicit F: Monad[F] with ApplicativeError[F, Throwable],
+      K: Serializer[K],
+      V: Serializer[V]): F[ProducerRecord[F]] =
       for {
         k <- F.fromEither(K.serialize(key))
         v <- F.fromEither(V.serialize(value))
-      } yield ProducerRecord[F](
-        topic,
-        keyBytes   = k,
-        valueBytes = v,
-        headers    = Headers.empty[F],
-        partition  = Some(partition)
-      )
+      } yield
+        ProducerRecord[F](
+          topic,
+          keyBytes   = k,
+          valueBytes = v,
+          headers    = Headers.empty[F],
+          partition  = Some(partition)
+        )
   }
 
   implicit def show[F[_]](implicit S: Show[Record[F]]): Show[ProducerRecord[F]] =

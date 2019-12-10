@@ -9,12 +9,16 @@ sealed trait Return[F[_]] {
 }
 
 object Return {
-  final case class Ack[F[_]](record: ProducerRecord[F], partition: Int, offset: Long, timestamp: Instant)
+  final case class Ack[F[_]](record: ProducerRecord[F],
+                             partition: Int,
+                             offset: Option[Long],
+                             timestamp: Option[Instant])
       extends Return[F]
+
   final case class Err[F[_]](record: ProducerRecord[F], ex: Throwable) extends Return[F]
 
   implicit def ackShow[F[_]]: Show[Ack[F]] =
-    (result: Ack[F]) => s"[${result.record.topic}-${result.partition}@${result.offset}]"
+    (result: Ack[F]) => s"[${result.record.topic}-${result.partition}@${result.offset.getOrElse(-1)}]"
 
   implicit def errShow[F[_]](implicit S: Show[ProducerRecord[F]]): Show[Err[F]] =
     (result: Err[F]) => S.show(result.record)

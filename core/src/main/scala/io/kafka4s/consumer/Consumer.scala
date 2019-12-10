@@ -24,7 +24,7 @@ object Consumer {
       record =>
         F.recover(consumer(record).fold[Return[F]](notFoundErr(record))(_ => Ack(record))) {
           case NonFatal(ex) => Err(record, ex)
-        }
+      }
     )
 
   implicit def show[F[_]](implicit S: Show[ConsumerRecord[F]]): Show[Return[F]] =
