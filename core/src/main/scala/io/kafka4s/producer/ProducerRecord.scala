@@ -2,6 +2,7 @@ package io.kafka4s.producer
 
 import cats.implicits._
 import cats.{ApplicativeError, Monad, Show}
+import io.kafka4s.ToKafka
 import io.kafka4s.common.{Header, Headers, Record}
 import io.kafka4s.serdes.Serializer
 
@@ -23,6 +24,10 @@ final case class ProducerRecord[F[_]](topic: String,
 }
 
 object ProducerRecord {
+
+  implicit def toKafka[F[_]]: ToKafka[ProducerRecord[F], DefaultProducerRecord] =
+    (record: ProducerRecord[F]) =>
+      new DefaultProducerRecord(record.topic, null, null, record.keyBytes, record.valueBytes, ???)
 
   def apply[F[_]](record: DefaultProducerRecord): ProducerRecord[F] =
     new ProducerRecord[F](

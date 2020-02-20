@@ -33,8 +33,7 @@ class KafkaSpec extends FlatSpec with Matchers {
     for {
 //      admin <- KafkaAdminBuilder().resource
 //      _     <- Resource.make(IO(???))(_ => IO(???))
-      config <- Resource.liftF(IO.fromEither(ConsumerConfiguration.fromConfig))
-
+//      config <- Resource.liftF(IO.fromEither(ConsumerConfiguration.fromConfig))
       firstRecord <- Resource.liftF(Deferred[IO, ConsumerRecord[IO]])
       _ <- KafkaConsumerBuilder[IO]()
         .withConsumer(DeferredConsumer(firstRecord))

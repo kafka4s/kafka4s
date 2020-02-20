@@ -2,6 +2,8 @@ package io.kafka4s.common
 
 import cats.implicits._
 import cats.{Eval, Foldable, Monoid, Show}
+import io.kafka4s.ToKafka
+import org.apache.kafka.common.header.internals.RecordHeaders
 import org.apache.kafka.common.header.{Headers => ApacheKafkaHeaders}
 
 import scala.collection.JavaConverters._
@@ -106,4 +108,7 @@ object Headers {
 
   def apply[F[_]](headers: ApacheKafkaHeaders): Headers[F] =
     new Headers(headers.iterator().asScala.map(Header[F]).toList)
+
+  implicit def toKafka[F[_]]: ToKafka[Header[F], ApacheKafkaHeaders] =
+    headers => new RecordHeaders()
 }

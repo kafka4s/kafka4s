@@ -4,16 +4,19 @@ import cats.effect.concurrent.Ref
 import cats.effect.{CancelToken, Concurrent, Resource}
 import cats.implicits._
 import io.kafka4s.RecordConsumer
-import io.kafka4s.consumer.{ConsumerRecord, DefaultConsumerRecord, Return}
+import io.kafka4s.consumer.{ConsumerRecord, DefaultConsumerRecord, Return, Subscription}
 import io.kafka4s.effect.config.ConsumerConfiguration
 import io.kafka4s.effect.log.Log
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 
-private[kafka4s] class KafkaConsumer[F[_]] private (
-  config: ConsumerConfiguration,
-  consumer: ConsumerEffect[F],
-  recordConsumer: RecordConsumer[F])(implicit F: Concurrent[F], L: Log[F]) {
+import scala.concurrent.duration.FiniteDuration
+
+class KafkaConsumer[F[_]](config: ConsumerConfiguration,
+                          pollTimeout: FiniteDuration,
+                          subscription: Subscription,
+                          consumer: ConsumerEffect[F],
+                          recordConsumer: RecordConsumer[F])(implicit F: Concurrent[F], L: Log[F]) {
 
   private def commit(records: Seq[ConsumerRecord[F]]): F[Unit] =
     if (records.isEmpty) F.unit
@@ -49,7 +52,7 @@ private[kafka4s] class KafkaConsumer[F[_]] private (
 
   private def fetch(exitSignal: Ref[F, Boolean]): F[Unit] = {
     val loop = for {
-      records <- consumer.poll(???) // config.pollTimeout
+      records <- consumer.poll(pollTimeout)
       _       <- if (records.isEmpty) F.unit else consume(records)
       exit    <- exitSignal.get
     } yield exit
@@ -57,9 +60,16 @@ private[kafka4s] class KafkaConsumer[F[_]] private (
     loop.flatMap(exit => if (exit) F.unit else fetch(exitSignal))
   }
 
+  private def subscribe: F[Unit] = subscription match {
+    case Subscription.Topics(topics) => consumer.subscribe(topics.toSeq)
+    case Subscription.Pattern(regex) => consumer.subscribe(regex)
+    case Subscription.Empty          => F.unit
+  }
+
   def start: F[CancelToken[F]] =
     for {
       exitSignal <- Ref.of[F, Boolean](false)
+      _          <- subscribe
       fiber      <- F.start(fetch(exitSignal))
     } yield exitSignal.set(true) >> fiber.join
 

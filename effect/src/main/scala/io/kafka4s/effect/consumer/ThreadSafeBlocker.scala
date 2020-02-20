@@ -1,7 +1,8 @@
 package io.kafka4s.effect.consumer
 
 import cats.effect.concurrent.Semaphore
-import cats.effect.{Blocker, Concurrent, ContextShift, Resource}
+import cats.implicits._
+import cats.effect.{Blocker, Concurrent, ContextShift}
 
 import scala.concurrent.blocking
 
@@ -13,10 +14,8 @@ class ThreadSafeBlocker[F[_]] private (blocker: Blocker, semaphore: Semaphore[F]
 
 object ThreadSafeBlocker {
 
-  def resource[F[_]](blocker: Blocker, maxConcurrency: Int = 1)(
-    implicit F: Concurrent[F],
-    CS: ContextShift[F]): Resource[F, ThreadSafeBlocker[F]] =
+  def apply[F[_]](blocker: Blocker)(implicit F: Concurrent[F], CS: ContextShift[F]): F[ThreadSafeBlocker[F]] =
     for {
-      semaphore <- Resource.liftF(Semaphore[F](maxConcurrency))
+      semaphore <- Semaphore[F](1)
     } yield new ThreadSafeBlocker(blocker, semaphore)
 }

@@ -4,6 +4,7 @@ import java.time.{Duration => JDuration}
 import java.util.Properties
 
 import cats.effect._
+import cats.implicits._
 import io.kafka4s.consumer.{DefaultConsumer, DefaultConsumerRecord}
 import io.kafka4s.effect.config.ConsumerConfiguration
 import org.apache.kafka.clients.consumer.{OffsetAndMetadata, OffsetAndTimestamp, KafkaConsumer => ApacheKafkaConsumer}
@@ -21,7 +22,6 @@ class ConsumerEffect[F[_]] private (consumer: DefaultConsumer, blocker: Blocker,
 
   def assign(partitions: Seq[TopicPartition]): F[Unit] = F.delay(consumer.assign(partitions.asJava))
   def subscribe(topics: Seq[String]): F[Unit]          = F.delay(consumer.subscribe(topics.asJava))
-  def subscribe(topics: Set[String]): F[Unit]          = F.delay(consumer.subscribe(topics.asJava))
   def subscribe(regex: Regex): F[Unit]                 = F.delay(consumer.subscribe(regex.pattern))
   def unsubscribe: F[Unit]                             = F.delay(consumer.unsubscribe())
 
@@ -81,13 +81,10 @@ class ConsumerEffect[F[_]] private (consumer: DefaultConsumer, blocker: Blocker,
 
 object ConsumerEffect {
 
-  def resource[F[_]](properties: Properties, blocker: Blocker)(implicit F: Concurrent[F],
-                                                               CS: ContextShift[F]): Resource[F, ConsumerEffect[F]] =
+  def apply[F[_]](properties: Properties, blocker: Blocker)(implicit F: Concurrent[F],
+                                                            CS: ContextShift[F]): F[ConsumerEffect[F]] =
     for {
-      config <- Resource.liftF(F.fromEither(ConsumerConfiguration.fromProperties(properties)))
-      consumer <- Resource.liftF(F.delay {
-        new ApacheKafkaConsumer[Array[Byte], Array[Byte]](config.properties)
-      })
-      threadSafe <- ThreadSafeBlocker.resource(blocker)
+      consumer   <- F.delay(new ApacheKafkaConsumer[Array[Byte], Array[Byte]](properties))
+      threadSafe <- ThreadSafeBlocker[F](blocker)
     } yield new ConsumerEffect(consumer, blocker, threadSafe)
 }

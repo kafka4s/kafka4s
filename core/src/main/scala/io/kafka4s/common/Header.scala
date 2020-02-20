@@ -5,6 +5,7 @@ import java.util.Base64
 import cats.implicits._
 import cats.{ApplicativeError, Eq, Show}
 import io.kafka4s.serdes.{Deserializer, Serializer}
+import org.apache.kafka.common.header.internals.RecordHeader
 import org.apache.kafka.common.header.{Header => ApacheKafkaHeader}
 
 import scala.util.hashing.MurmurHash3
@@ -24,6 +25,8 @@ final case class Header[F[_]](key: String, value: Array[Byte]) {
 
   override def hashCode(): Int =
     MurmurHash3.bytesHash(key.getBytes ++ value)
+
+  def toKafka = new RecordHeader(key, value)
 }
 
 object Header {

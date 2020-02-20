@@ -1,15 +1,17 @@
 package io.kafka4s.effect.producer
 
-import cats.effect.{Concurrent, ExitCase, Resource}
+import java.util.Properties
+
+import cats.effect.{Concurrent, ExitCase}
 import cats.implicits._
 import io.kafka4s.producer.{DefaultProducer, DefaultProducerRecord}
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
-import org.apache.kafka.clients.producer.{Callback, RecordMetadata}
+import org.apache.kafka.clients.producer.{Callback, RecordMetadata, KafkaProducer => ApacheKafkaProducer}
 import org.apache.kafka.common.{Metric, MetricName, PartitionInfo, TopicPartition}
 
 import scala.collection.JavaConverters._
 
-class ProducerEffect[F[_]] private (producer: DefaultProducer)(implicit F: Concurrent[F]) {
+class ProducerEffect[F[_]](producer: DefaultProducer)(implicit F: Concurrent[F]) {
   def initTransactions: F[Unit]  = F.delay(producer.initTransactions())
   def beginTransaction: F[Unit]  = F.delay(producer.beginTransaction())
   def commitTransaction: F[Unit] = F.delay(producer.commitTransaction())
@@ -46,5 +48,9 @@ class ProducerEffect[F[_]] private (producer: DefaultProducer)(implicit F: Concu
 }
 
 object ProducerEffect {
-  def resource[F[_]: Concurrent]: Resource[F, ProducerEffect[F]] = ???
+
+  def apply[F[_]](properties: Properties)(implicit F: Concurrent[F]): F[ProducerEffect[F]] =
+    for {
+      producer <- F.delay(new ApacheKafkaProducer[Array[Byte], Array[Byte]](properties))
+    } yield new ProducerEffect[F](producer)
 }

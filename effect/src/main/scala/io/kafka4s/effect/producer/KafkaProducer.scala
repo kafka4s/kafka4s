@@ -8,7 +8,7 @@ import cats.implicits._
 import io.kafka4s.Producer
 import io.kafka4s.producer.{DefaultProducerRecord, ProducerRecord, Return}
 
-class KafkaProducer[F[_]] private (producer: ProducerEffect[F])(implicit F: Sync[F]) extends Producer[F] {
+class KafkaProducer[F[_]](producer: ProducerEffect[F])(implicit F: Sync[F]) extends Producer[F] {
 
   /**
     * The side-effect of sending a producer record
@@ -30,5 +30,4 @@ class KafkaProducer[F[_]] private (producer: ProducerEffect[F])(implicit F: Sync
           Return.Err(record, ex)
       }
   }
-
 }
