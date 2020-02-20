@@ -4,15 +4,19 @@ import java.util.Properties
 
 import cats.effect.{Resource, Sync}
 
-case class KafkaAdminBuilder[F[_]] private (properties: Option[Properties]) {
+case class KafkaAdminBuilder[F[_]] private (properties: Properties) {
 
-  def resource(implicit F: Sync[F]): Resource[F, AdminEffect[F]] = for {
-    admin <- properties.fold(AdminEffect.resource)(AdminEffect.resource(_))
-  } yield admin
+  def resource(implicit F: Sync[F]): Resource[F, AdminEffect[F]] =
+    for {
+      config <- Resource.liftF(F.fromEither {
+        if (properties.isEmpty) KafkaAdminConfiguration.load else KafkaAdminConfiguration.loadFrom(properties)
+      })
+      admin <- Resource.make(AdminEffect[F](config.properties))(_.close())
+    } yield admin
 }
 
 object KafkaAdminBuilder {
 
   def apply[F[_]: Sync]: KafkaAdminBuilder[F] =
-    KafkaAdminBuilder[F](properties = None)
+    KafkaAdminBuilder[F](properties = new Properties())
 }

@@ -6,7 +6,6 @@ import java.util.Properties
 import cats.effect._
 import cats.implicits._
 import io.kafka4s.consumer.{DefaultConsumer, DefaultConsumerRecord}
-import io.kafka4s.effect.config.ConsumerConfiguration
 import org.apache.kafka.clients.consumer.{OffsetAndMetadata, OffsetAndTimestamp, KafkaConsumer => ApacheKafkaConsumer}
 import org.apache.kafka.common.{Metric, MetricName, PartitionInfo, TopicPartition}
 

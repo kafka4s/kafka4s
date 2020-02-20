@@ -7,9 +7,9 @@ import io.kafka4s.Producer
 import org.scalatest.{FlatSpec, Matchers}
 import io.kafka4s.consumer._
 import io.kafka4s.effect.admin.KafkaAdminBuilder
-import io.kafka4s.effect.config.ConsumerConfiguration
-import io.kafka4s.effect.consumer.KafkaConsumerBuilder
+import io.kafka4s.effect.consumer.{KafkaConsumerBuilder, KafkaConsumerConfiguration}
 import io.kafka4s.effect.producer.KafkaProducerBuilder
+import org.apache.kafka.clients.admin.NewTopic
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, TimeoutException}
@@ -33,16 +33,16 @@ class KafkaSpec extends FlatSpec with Matchers {
 
   def withEnvironment[A](test: (Producer[IO], Deferred[IO, ConsumerRecord[IO]]) => IO[A]): A = {
     for {
-//      admin <- KafkaAdminBuilder().resource
-//      _     <- Resource.make(IO(???))(_ => IO(???))
-//      config <- Resource.liftF(IO.fromEither(ConsumerConfiguration.fromConfig))
+      admin <- KafkaAdminBuilder[IO].resource
+      _     <- Resource.make(admin.createTopics(Seq(new NewTopic(fooTopic, 1, 1))))(_ => admin.deleteTopics(Seq(fooTopic)))
+
       firstRecord <- Resource.liftF(Deferred[IO, ConsumerRecord[IO]])
-      _ <- KafkaConsumerBuilder[IO]()
+      _ <- KafkaConsumerBuilder[IO]
         .withTopics(fooTopic)
         .withConsumer(DeferredConsumer(firstRecord))
         .resource
 
-      producer <- KafkaProducerBuilder[IO]().resource
+      producer <- KafkaProducerBuilder[IO].resource
 
     } yield (producer, firstRecord)
   }.use(test.tupled).unsafeRunSync()

@@ -5,14 +5,13 @@ import cats.effect.{CancelToken, Concurrent, Resource}
 import cats.implicits._
 import io.kafka4s.RecordConsumer
 import io.kafka4s.consumer.{ConsumerRecord, DefaultConsumerRecord, Return, Subscription}
-import io.kafka4s.effect.config.ConsumerConfiguration
 import io.kafka4s.effect.log.Log
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 
 import scala.concurrent.duration.FiniteDuration
 
-class KafkaConsumer[F[_]](config: ConsumerConfiguration,
+class KafkaConsumer[F[_]](config: KafkaConsumerConfiguration,
                           pollTimeout: FiniteDuration,
                           subscription: Subscription,
                           consumer: ConsumerEffect[F],

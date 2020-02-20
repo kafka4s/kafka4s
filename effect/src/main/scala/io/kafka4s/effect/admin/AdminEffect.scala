@@ -1,27 +1,27 @@
 package io.kafka4s.effect.admin
 
+import java.time.{Duration => JDuration}
 import java.util.Properties
 
-import cats.effect.{Resource, Sync}
-import io.kafka4s.effect.config.AdminConfiguration
+import cats.effect.Sync
+import cats.implicits._
 import org.apache.kafka.clients.admin.{AdminClient, NewTopic}
 
-class AdminEffect[F[_]] private (admin: AdminClient)(implicit F: Sync[F]) {
-  def createTopics(newTopics: Seq[NewTopic]): F[Unit] = ???
+import scala.concurrent.duration._
 
-  def deleteTopics(topics: Seq[String]): F[Unit] = ???
+class AdminEffect[F[_]] private (admin: AdminClient)(implicit F: Sync[F]) {
+  def createTopics(newTopics: Seq[NewTopic]): F[Unit] = F.unit
+
+  def deleteTopics(topics: Seq[String]): F[Unit] = F.unit
+
+  def close(timeout: FiniteDuration = 30.seconds): F[Unit] =
+    F.delay(admin.close(JDuration.ofMillis(timeout.toMillis)))
 }
 
 object AdminEffect {
 
-  def resource[F[_]](implicit F: Sync[F]): Resource[F, AdminEffect[F]] =
+  def apply[F[_]](properties: Properties)(implicit F: Sync[F]): F[AdminEffect[F]] =
     for {
-      config <- Resource.liftF(F.fromEither(AdminConfiguration.load))
-      admin  <- Resource.make(F.delay(AdminClient.create(config.properties)))(admin => F.delay(admin.close()))
-    } yield new AdminEffect[F](admin)
-
-  def resource[F[_]](properties: Properties)(implicit F: Sync[F]): Resource[F, AdminEffect[F]] =
-    for {
-      admin <- Resource.make(F.delay(AdminClient.create(properties)))(admin => F.delay(admin.close()))
+      admin <- F.delay(AdminClient.create(properties))
     } yield new AdminEffect[F](admin)
 }

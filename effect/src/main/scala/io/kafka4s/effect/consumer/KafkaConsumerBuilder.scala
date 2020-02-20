@@ -6,9 +6,9 @@ import java.util.concurrent.Executors
 import cats.ApplicativeError
 import cats.effect._
 import cats.implicits._
+import io.kafka4s.effect.config
 import io.kafka4s.RecordConsumer
 import io.kafka4s.consumer._
-import io.kafka4s.effect.config.ConsumerConfiguration
 
 import scala.concurrent.duration._
 import scala.util.matching.Regex
@@ -26,6 +26,12 @@ case class KafkaConsumerBuilder[F[_]](pollTimeout: FiniteDuration,
   def withTopics(topics: Set[String]): Self =
     copy(subscription = Subscription.Topics(topics))
 
+  def withProperties(properties: Properties): Self =
+    copy(properties = properties)
+
+  def withProperties(properties: Map[String, String]): Self =
+    copy(properties = config.mapToProperties(properties))
+
   def withPattern(regex: Regex): Self =
     copy(subscription = Subscription.Pattern(regex))
 
@@ -40,10 +46,12 @@ case class KafkaConsumerBuilder[F[_]](pollTimeout: FiniteDuration,
 
   def resource(implicit F: Concurrent[F], CS: ContextShift[F]): Resource[F, KafkaConsumer[F]] =
     for {
-      config <- Resource.liftF(F.fromEither(ConsumerConfiguration.load))
-      es     <- Resource.make(F.delay(Executors.newCachedThreadPool()))(e => F.delay(e.shutdown()))
+      config <- Resource.liftF(F.fromEither {
+        if (properties.isEmpty) KafkaConsumerConfiguration.load else KafkaConsumerConfiguration.loadFrom(properties)
+      })
+      es <- Resource.make(F.delay(Executors.newCachedThreadPool()))(e => F.delay(e.shutdown()))
       blocker = Blocker.liftExecutorService(es)
-      consumer <- Resource.liftF(ConsumerEffect[F](config.toConsumer, blocker))
+      consumer <- Resource.make(ConsumerEffect[F](config.toConsumer, blocker))(_.close())
       c = new KafkaConsumer[F](config, pollTimeout, subscription, consumer, recordConsumer)
       _ <- c.resource
     } yield c
@@ -53,7 +61,7 @@ case class KafkaConsumerBuilder[F[_]](pollTimeout: FiniteDuration,
 
 object KafkaConsumerBuilder {
 
-  def apply[F[_]: Sync](): KafkaConsumerBuilder[F] =
+  def apply[F[_]: Sync]: KafkaConsumerBuilder[F] =
     KafkaConsumerBuilder[F](pollTimeout    = 100.millis,
                             properties     = new Properties(),
                             subscription   = Subscription.Empty,

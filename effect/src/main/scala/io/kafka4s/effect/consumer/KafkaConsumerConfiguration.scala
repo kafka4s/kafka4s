@@ -1,10 +1,11 @@
-package io.kafka4s.effect.config
+package io.kafka4s.effect.consumer
 
 import java.util.Properties
 
+import io.kafka4s.effect.config._
 import org.apache.kafka.clients.consumer.ConsumerConfig
 
-case class ConsumerConfiguration private (bootstrapServers: Seq[String], groupId: String, properties: Properties) {
+case class KafkaConsumerConfiguration private (bootstrapServers: Seq[String], groupId: String, properties: Properties) {
 
   def toConsumer: Properties = {
     properties.putIfAbsent(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
@@ -17,17 +18,17 @@ case class ConsumerConfiguration private (bootstrapServers: Seq[String], groupId
   }
 }
 
-object ConsumerConfiguration {
+object KafkaConsumerConfiguration {
 
-  def load: Either[Throwable, ConsumerConfiguration] =
+  def load: Either[Throwable, KafkaConsumerConfiguration] =
     for {
       properties <- configToProperties("kafka4s.consumer")
-      config     <- fromProperties(properties)
+      config     <- loadFrom(properties)
     } yield config
 
-  def fromProperties(properties: Properties): Either[Throwable, ConsumerConfiguration] =
+  def loadFrom(properties: Properties): Either[Throwable, KafkaConsumerConfiguration] =
     for {
       bootstrapServers <- properties.getter[String](ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG)
       groupId          <- properties.getter[String](ConsumerConfig.GROUP_ID_CONFIG)
-    } yield ConsumerConfiguration(bootstrapServers.split(raw",").map(_.trim), groupId, properties)
+    } yield KafkaConsumerConfiguration(bootstrapServers.split(raw",").map(_.trim), groupId, properties)
 }
