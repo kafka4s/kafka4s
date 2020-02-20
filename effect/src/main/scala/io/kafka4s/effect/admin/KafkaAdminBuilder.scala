@@ -1,12 +1,18 @@
 package io.kafka4s.effect.admin
 
-import cats.effect.Resource
-import io.kafka4s.effect.consumer.KafkaConsumer
+import java.util.Properties
 
-case class KafkaAdminBuilder[F[_]]() {
-  def resource: Resource[F, KafkaConsumer[F]] = ???
+import cats.effect.{Resource, Sync}
+
+case class KafkaAdminBuilder[F[_]] private (properties: Option[Properties]) {
+
+  def resource(implicit F: Sync[F]): Resource[F, AdminEffect[F]] = for {
+    admin <- properties.fold(AdminEffect.resource)(AdminEffect.resource(_))
+  } yield admin
 }
 
 object KafkaAdminBuilder {
-//  def apply[F[_]: Sync](): KafkaAdminBuilder[F] = KafkaAdminBuilder[F]()
+
+  def apply[F[_]: Sync]: KafkaAdminBuilder[F] =
+    KafkaAdminBuilder[F](properties = None)
 }

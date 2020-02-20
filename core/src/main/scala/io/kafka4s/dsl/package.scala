@@ -23,15 +23,22 @@ package object dsl extends DslImplicits with SerdeImplicits {
 
   /**
     * Pattern matching for ConsumerRecord partition
-    */
-  object - {
-    def unapply[F[_]](record: ConsumerRecord[F]): Option[(Record[F], Int)] = Some(record -> record.partition)
+    */     
+  object Partition {
+    def unapply[F[_]](record: ConsumerRecord[F]): Option[Int] = Some(record.partition)
   }
 
   /**
     * Pattern matching for ConsumerRecord offset
     */
-  object at {
-    def unapply[F[_]](record: ConsumerRecord[F]): Option[(Record[F], Long)] = Some(record -> record.offset)
+  object Offset {
+    def unapply[F[_]](record: ConsumerRecord[F]): Option[Long] = Some(record.offset)
+  }
+
+  /**
+    * Combine different pattern matching
+    */
+  object & {
+    def unapply[A](a: A): Some[(A, A)] = Some((a, a))
   }
 }

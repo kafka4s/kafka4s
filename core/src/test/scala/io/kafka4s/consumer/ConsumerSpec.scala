@@ -14,11 +14,11 @@ class ConsumerSpec extends UnitSpec {
 
   "$.of" should "wrap a partial function in a Kleisli that may consume a record" in {
     val consumerEn: Consumer[Id] = Consumer.of[Id] {
-      case _ @Topic("my-topic-en") => ()
+      case _ @ Topic("my-topic-en") => ()
     }
 
     val consumerPt: Consumer[Id] = Consumer.of[Id] {
-      case _ @Topic("my-topic-pt") => ()
+      case _ @ Topic("my-topic-pt") => ()
     }
 
     val consumer: Consumer[Id] = consumerEn <+> consumerPt
