@@ -44,7 +44,11 @@ case class KafkaConsumerBuilder[F[_]](pollTimeout: FiniteDuration,
       es     <- Resource.make(F.delay(Executors.newCachedThreadPool()))(e => F.delay(e.shutdown()))
       blocker = Blocker.liftExecutorService(es)
       consumer <- Resource.liftF(ConsumerEffect[F](config.toConsumer, blocker))
-    } yield new KafkaConsumer[F](config, pollTimeout, subscription, consumer, recordConsumer)
+      c = new KafkaConsumer[F](config, pollTimeout, subscription, consumer, recordConsumer)
+      _ <- c.resource
+    } yield c
+
+  def serve(implicit F: Concurrent[F], CS: ContextShift[F]): F[Unit] = resource.use(_ => F.never)
 }
 
 object KafkaConsumerBuilder {

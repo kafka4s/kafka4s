@@ -7,5 +7,7 @@ trait Logger[F[_]] {
 }
 
 object Logger {
-  implicit def apply[F[_]](implicit F: Sync[F]): Logger[F] = ???
+  implicit def apply[F[_]](implicit F: Sync[F]): Logger[F] = new Logger[F] {
+    override def log(message: Message): F[Unit] = F.unit
+  }
 }

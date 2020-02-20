@@ -25,8 +25,6 @@ final case class Header[F[_]](key: String, value: Array[Byte]) {
 
   override def hashCode(): Int =
     MurmurHash3.bytesHash(key.getBytes ++ value)
-
-  def toKafka = new RecordHeader(key, value)
 }
 
 object Header {
@@ -53,4 +51,10 @@ object Header {
     header => s"${header.key} -> ${b64.encodeToString(header.value)}"
 
   implicit def eq[F[_]]: Eq[Header[F]] = (x, y) => x.hashCode() == y.hashCode()
+
+  implicit def toKafka[F[_]]: ToKafka[Header[F]] = new ToKafka[Header[F]] {
+    type Result = ApacheKafkaHeader
+
+    def transform(header: Header[F]): ApacheKafkaHeader = new RecordHeader(header.key, header.value)
+  }
 }

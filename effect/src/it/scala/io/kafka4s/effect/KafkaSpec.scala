@@ -19,6 +19,8 @@ class KafkaSpec extends FlatSpec with Matchers {
   implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit val timer: Timer[IO]               = IO.timer(ExecutionContext.global)
 
+  val fooTopic = "foo"
+
   def waitFor[A](duration: FiniteDuration)(ioa: => IO[A]): IO[A] =
     IO.race(Timer[IO].sleep(duration), ioa).flatMap {
       case Left(_)  => IO.raiseError(new TimeoutException(duration.toString()))
@@ -36,6 +38,7 @@ class KafkaSpec extends FlatSpec with Matchers {
 //      config <- Resource.liftF(IO.fromEither(ConsumerConfiguration.fromConfig))
       firstRecord <- Resource.liftF(Deferred[IO, ConsumerRecord[IO]])
       _ <- KafkaConsumerBuilder[IO]()
+        .withTopics(fooTopic)
         .withConsumer(DeferredConsumer(firstRecord))
         .resource
 
@@ -46,8 +49,8 @@ class KafkaSpec extends FlatSpec with Matchers {
 
   it should "should produce and consume messages" in withEnvironment { (producer, maybeMessage) =>
     for {
-      _ <- producer.send(topic = "foo", key = 1, value = "bar")
-      record <- waitFor(5.seconds) {
+      _ <- producer.send(fooTopic, key = 1, value = "bar")
+      record <- waitFor(10.seconds) {
         maybeMessage.get
       }
       topic = record.topic

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
+
+  <logger name="org.apache.kafka" level="ERROR" />
+  <logger name="com.tnt.common.kafka" level="DEBUG" />
+
+  <root level="${LOGLEVEL_ROOT:-INFO}">
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+      <encoder>
+        <pattern>%d{ISO8601} %-5level [%logger{0}] - %msg%n</pattern>
+      </encoder>
+    </appender>
+  </root>
+</configuration>

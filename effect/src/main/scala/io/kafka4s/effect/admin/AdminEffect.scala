@@ -14,12 +14,14 @@ class AdminEffect[F[_]] private (admin: AdminClient)(implicit F: Sync[F]) {
 
 object AdminEffect {
 
-  def resource[F[_]](implicit F: Sync[F]): Resource[F, AdminEffect[F]] = for {
-    config <- Resource.liftF(F.fromEither(AdminConfiguration.fromConfig))
-    admin  <- Resource.make(F.delay(AdminClient.create(config.properties)))(admin => F.delay(admin.close()))
-  } yield new AdminEffect[F](admin)
+  def resource[F[_]](implicit F: Sync[F]): Resource[F, AdminEffect[F]] =
+    for {
+      config <- Resource.liftF(F.fromEither(AdminConfiguration.load))
+      admin  <- Resource.make(F.delay(AdminClient.create(config.properties)))(admin => F.delay(admin.close()))
+    } yield new AdminEffect[F](admin)
 
-  def resource[F[_]](properties: Properties)(implicit F: Sync[F]): Resource[F, AdminEffect[F]] = for {
-    admin <- Resource.make(F.delay(AdminClient.create(properties)))(admin => F.delay(admin.close()))
-  } yield new AdminEffect[F](admin)
+  def resource[F[_]](properties: Properties)(implicit F: Sync[F]): Resource[F, AdminEffect[F]] =
+    for {
+      admin <- Resource.make(F.delay(AdminClient.create(properties)))(admin => F.delay(admin.close()))
+    } yield new AdminEffect[F](admin)
 }

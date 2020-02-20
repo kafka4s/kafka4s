@@ -2,9 +2,8 @@ package io.kafka4s.common
 
 import cats.implicits._
 import cats.{Eval, Foldable, Monoid, Show}
-import io.kafka4s.ToKafka
 import org.apache.kafka.common.header.internals.RecordHeaders
-import org.apache.kafka.common.header.{Headers => ApacheKafkaHeaders}
+import org.apache.kafka.common.header.{Header => ApacheKafkaHeader, Headers => ApacheKafkaHeaders}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
@@ -76,6 +75,8 @@ final class Headers[F[_]] private (private val headers: List[Header[F]]) extends
       h
     }
 
+  def map[A](f: Header[F] => A): Seq[A] = headers.map(f)
+
   def filterNot(f: Header[F] => Boolean): Headers[F] =
     Headers[F](headers.filterNot(f))
 
@@ -109,6 +110,12 @@ object Headers {
   def apply[F[_]](headers: ApacheKafkaHeaders): Headers[F] =
     new Headers(headers.iterator().asScala.map(Header[F]).toList)
 
-  implicit def toKafka[F[_]]: ToKafka[Header[F], ApacheKafkaHeaders] =
-    headers => new RecordHeaders()
+  implicit def toKafka[F[_]]: ToKafka[Headers[F]] = new ToKafka[Headers[F]] {
+    type Result = ApacheKafkaHeaders
+
+    def transform(headers: Headers[F]): ApacheKafkaHeaders = {
+      val h = headers.map(h => ToKafka[Header[F]].transform(h))
+      new RecordHeaders(h.asInstanceOf[Iterable[ApacheKafkaHeader]].asJava)
+    }
+  }
 }

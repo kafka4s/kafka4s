@@ -8,7 +8,7 @@ case class AdminConfiguration(bootstrapServers: Seq[String], properties: Propert
 
 object AdminConfiguration {
 
-  def fromConfig: Either[Throwable, AdminConfiguration] =
+  def load: Either[Throwable, AdminConfiguration] =
     for {
       properties <- configToProperties("kafka4s.consumer")
       config     <- fromProperties(properties)

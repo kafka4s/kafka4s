@@ -6,6 +6,7 @@ import cats.data.Kleisli
 import cats.effect.Sync
 import cats.implicits._
 import io.kafka4s.Producer
+import io.kafka4s.common.ToKafka
 import io.kafka4s.producer.{DefaultProducerRecord, ProducerRecord, Return}
 
 class KafkaProducer[F[_]](producer: ProducerEffect[F])(implicit F: Sync[F]) extends Producer[F] {
@@ -15,9 +16,8 @@ class KafkaProducer[F[_]](producer: ProducerEffect[F])(implicit F: Sync[F]) exte
     */
   def send1: Kleisli[F, ProducerRecord[F], Return[F]] = Kleisli { record =>
     for {
-      metadata <- producer
-        .send(???)
-        .attempt
+      producerRecord <- F.delay(ToKafka[ProducerRecord[F]].transform(record))
+      metadata       <- producer.send(producerRecord.asInstanceOf[DefaultProducerRecord]).attempt
     } yield
       metadata match {
         case Right(m) =>

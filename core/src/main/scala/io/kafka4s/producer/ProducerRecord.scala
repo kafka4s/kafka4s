@@ -2,11 +2,12 @@ package io.kafka4s.producer
 
 import cats.implicits._
 import cats.{ApplicativeError, Monad, Show}
-import io.kafka4s.ToKafka
-import io.kafka4s.common.{Header, Headers, Record}
+import io.kafka4s.common.{Header, Headers, Record, ToKafka}
 import io.kafka4s.serdes.Serializer
+import org.apache.kafka.common.header.internals.RecordHeaders
 
 import scala.util.hashing.MurmurHash3
+import scala.collection.JavaConverters._
 
 final case class ProducerRecord[F[_]](topic: String,
                                       keyBytes: Array[Byte],
@@ -24,10 +25,6 @@ final case class ProducerRecord[F[_]](topic: String,
 }
 
 object ProducerRecord {
-
-  implicit def toKafka[F[_]]: ToKafka[ProducerRecord[F], DefaultProducerRecord] =
-    (record: ProducerRecord[F]) =>
-      new DefaultProducerRecord(record.topic, null, null, record.keyBytes, record.valueBytes, ???)
 
   def apply[F[_]](record: DefaultProducerRecord): ProducerRecord[F] =
     new ProducerRecord[F](
@@ -93,4 +90,19 @@ object ProducerRecord {
 
   implicit def show[F[_]](implicit S: Show[Record[F]]): Show[ProducerRecord[F]] =
     (record: ProducerRecord[F]) => S.show(record)
+
+  implicit def toKafka[F[_]]: ToKafka[ProducerRecord[F]] = new ToKafka[ProducerRecord[F]] {
+    type Result = DefaultProducerRecord
+
+    def transform(record: ProducerRecord[F]): DefaultProducerRecord = {
+      val headers = ToKafka[Headers[F]].transform(record.headers)
+      new DefaultProducerRecord(record.topic,
+                                null,
+                                null,
+                                record.keyBytes,
+                                record.valueBytes,
+                                headers.asInstanceOf[RecordHeaders].toArray().toIterable.asJava)
+    }
+  }
+
 }
