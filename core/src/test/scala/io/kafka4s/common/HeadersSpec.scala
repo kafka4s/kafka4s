@@ -1,7 +1,7 @@
-package io.kafka4s.consumer
+package io.kafka4s.common
 
 import io.kafka4s.test.UnitSpec
 
-class ConsumerRecordSpec extends UnitSpec {
+class HeadersSpec extends UnitSpec {
   it should "do something" is pending
 }

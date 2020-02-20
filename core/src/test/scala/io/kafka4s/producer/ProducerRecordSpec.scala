@@ -36,5 +36,5 @@ class ProducerRecordSpec extends UnitSpec {
     record.partition shouldBe Some(0)
   }
 
-  ".put" should "" in {}
+  ".put" should "" is pending
 }
