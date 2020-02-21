@@ -5,6 +5,7 @@ import cats.effect.{CancelToken, Concurrent, Resource}
 import cats.implicits._
 import io.kafka4s.RecordConsumer
 import io.kafka4s.consumer.{ConsumerRecord, DefaultConsumerRecord, Return, Subscription}
+import io.kafka4s.effect.BANNER
 import io.kafka4s.effect.log.Log
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
@@ -68,6 +69,8 @@ class KafkaConsumer[F[_]](config: KafkaConsumerConfiguration,
   def start: F[CancelToken[F]] =
     for {
       exitSignal <- Ref.of[F, Boolean](false)
+      _          <- L.info(BANNER)
+      _          <- L.info(s"Kafka connecting to [${config.bootstrapServers}]")
       _          <- subscribe
       fiber      <- F.start(fetch(exitSignal))
     } yield exitSignal.set(true) >> fiber.join

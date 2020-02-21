@@ -10,17 +10,18 @@ import scala.collection.JavaConverters._
 package object config extends GetterImplicits {
 
   private[kafka4s] def mapToProperties(map: Map[String, String]): Properties = {
-    map.foldLeft(new Properties()) { case (props, item) =>
-      val (key, value)  = item
-      props.put(key, value)
-      props
+    map.foldLeft(new Properties()) {
+      case (props, item) =>
+        val (key, value) = item
+        props.put(key, value)
+        props
     }
   }
 
   private[kafka4s] def configToProperties(path: String): Either[Throwable, Properties] =
     for {
       configObj <- Either.catchNonFatal {
-        ConfigFactory.load().getObject("kafka4s.consumer").unwrapped().asScala.toMap
+        ConfigFactory.load().getObject(path).unwrapped().asScala.toMap
       }
     } yield
       configObj.foldLeft[Properties](new Properties()) {

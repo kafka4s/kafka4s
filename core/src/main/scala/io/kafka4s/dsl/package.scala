@@ -2,4 +2,4 @@ package io.kafka4s
 
 import io.kafka4s.serdes.SerdeImplicits
 
-package object dsl extends DslImplicits with SerdeImplicits
+package object dsl extends DslConsumer with SerdeImplicits

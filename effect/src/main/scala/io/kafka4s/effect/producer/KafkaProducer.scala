@@ -11,6 +11,8 @@ import io.kafka4s.producer.{DefaultProducerRecord, ProducerRecord, Return}
 
 class KafkaProducer[F[_]](producer: ProducerEffect[F])(implicit F: Sync[F]) extends Producer[F] {
 
+  def atomic[A](fa: F[A]): F[A] = producer.transaction(fa)
+
   /**
     * The side-effect of sending a producer record
     */

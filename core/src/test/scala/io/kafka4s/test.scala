@@ -1,11 +1,12 @@
 package io.kafka4s
 
 import cats.{Id, Monad, MonadError}
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 object test {
 
-  trait UnitSpec extends FlatSpec with Matchers {
+  trait UnitSpec extends AnyFlatSpec with Matchers {
 
     implicit val applicativeError = new MonadError[Id, Throwable] {
 

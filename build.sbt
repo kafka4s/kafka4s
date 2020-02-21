@@ -19,11 +19,11 @@ val Dependencies = new {
   val slf4j = "org.slf4j"          % "slf4j-api"              % "1.7.25"
   val logback = "ch.qos.logback"   % "logback-classic"        % "1.2.3"
 
-  val scalaTest = "org.scalatest" %% "scalatest"              % "3.0.5"
-  val scalaMock = "org.scalamock" %% "scalamock"              % "4.2.0"
+  val scalaTest = "org.scalatest" %% "scalatest"              % "3.1.1"
+  val scalaMock = "org.scalamock" %% "scalamock"              % "4.4.0"
 
   val betterMonadicFor = "com.olegpy" %% "better-monadic-for" % "0.3.1"
-  val kindProjector = "org.spire-math" %% "kind-projector"    % "0.9.6"
+  val kindProjector = "org.typelevel" %% "kind-projector"    % "0.10.3"
 }
 
 lazy val kafka4s = project.in(file("."))

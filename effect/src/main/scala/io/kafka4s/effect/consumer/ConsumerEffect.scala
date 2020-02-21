@@ -1,12 +1,17 @@
 package io.kafka4s.effect.consumer
 
 import java.time.{Duration => JDuration}
-import java.util.Properties
+import java.util.{Collection, Properties}
 
 import cats.effect._
 import cats.implicits._
-import io.kafka4s.consumer.{DefaultConsumer, DefaultConsumerRecord}
-import org.apache.kafka.clients.consumer.{OffsetAndMetadata, OffsetAndTimestamp, KafkaConsumer => ApacheKafkaConsumer}
+import io.kafka4s.consumer.{ConsumerRebalance, DefaultConsumer, DefaultConsumerRecord}
+import org.apache.kafka.clients.consumer.{
+  ConsumerRebalanceListener,
+  OffsetAndMetadata,
+  OffsetAndTimestamp,
+  KafkaConsumer => ApacheKafkaConsumer
+}
 import org.apache.kafka.common.{Metric, MetricName, PartitionInfo, TopicPartition}
 
 import scala.collection.JavaConverters._
@@ -17,12 +22,30 @@ class ConsumerEffect[F[_]] private (consumer: DefaultConsumer, blocker: Blocker,
   implicit F: Sync[F],
   CS: ContextShift[F]) {
 
+  // TODO
+  implicit def rebalanceListener(cb: ConsumerRebalance => F[Unit]): ConsumerRebalanceListener =
+    new ConsumerRebalanceListener() {
+
+      def onPartitionsRevoked(partitions: Collection[TopicPartition]): Unit = {
+        cb(ConsumerRebalance.PartitionsRevoked(partitions.asScala.toSeq))
+      }
+
+      def onPartitionsAssigned(partitions: Collection[TopicPartition]): Unit = {
+        cb(ConsumerRebalance.PartitionsAssigned(partitions.asScala.toSeq))
+      }
+    }
+
   def metrics: F[Map[MetricName, Metric]] = F.delay(consumer.metrics().asScala.toMap)
 
   def assign(partitions: Seq[TopicPartition]): F[Unit] = F.delay(consumer.assign(partitions.asJava))
-  def subscribe(topics: Seq[String]): F[Unit]          = F.delay(consumer.subscribe(topics.asJava))
-  def subscribe(regex: Regex): F[Unit]                 = F.delay(consumer.subscribe(regex.pattern))
-  def unsubscribe: F[Unit]                             = F.delay(consumer.unsubscribe())
+
+  def subscribe(topics: Seq[String]): F[Unit] =
+    F.delay(consumer.subscribe(topics.asJava))
+
+  def subscribe(regex: Regex): F[Unit] =
+    F.delay(consumer.subscribe(regex.pattern))
+
+  def unsubscribe: F[Unit] = F.delay(consumer.unsubscribe())
 
   def pause(partitions: Seq[TopicPartition]): F[Unit]  = F.delay(consumer.pause(partitions.asJava))
   def resume(partitions: Seq[TopicPartition]): F[Unit] = F.delay(consumer.resume(partitions.asJava))

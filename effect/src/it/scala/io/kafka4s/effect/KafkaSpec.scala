@@ -1,20 +1,20 @@
 package io.kafka4s.effect
 
-import cats.effect.{ContextShift, IO, Resource, Timer}
 import cats.effect.concurrent.Deferred
-import cats.implicits._
+import cats.effect.{ContextShift, IO, Resource, Timer}
 import io.kafka4s.Producer
-import org.scalatest.{FlatSpec, Matchers}
 import io.kafka4s.consumer._
 import io.kafka4s.effect.admin.KafkaAdminBuilder
-import io.kafka4s.effect.consumer.{KafkaConsumerBuilder, KafkaConsumerConfiguration}
+import io.kafka4s.effect.consumer.KafkaConsumerBuilder
 import io.kafka4s.effect.producer.KafkaProducerBuilder
 import org.apache.kafka.clients.admin.NewTopic
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, TimeoutException}
 
-class KafkaSpec extends FlatSpec with Matchers {
+class KafkaSpec extends AnyFlatSpec with Matchers {
 
   implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit val timer: Timer[IO]               = IO.timer(ExecutionContext.global)

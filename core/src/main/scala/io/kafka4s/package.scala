@@ -1,6 +1,6 @@
 package io
 
-import io.kafka4s.consumer.{Implicits => ConsumerImplicits}
+import io.kafka4s.consumer.ConsumerImplicits
 
 package object kafka4s extends ConsumerImplicits {
   type Producer[F[_]]      = producer.Producer[F]
