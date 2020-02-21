@@ -1,13 +1,15 @@
 package io.kafka4s.effect.consumer
 
+import java.util.concurrent.Executors
+
+import cats.effect._
 import cats.effect.concurrent.Ref
-import cats.effect.{CancelToken, Concurrent, Resource}
 import cats.implicits._
 import io.kafka4s.RecordConsumer
 import io.kafka4s.consumer.{ConsumerRecord, DefaultConsumerRecord, Return, Subscription}
 import io.kafka4s.effect.BANNER
 import io.kafka4s.effect.log.Log
-import org.apache.kafka.clients.consumer.OffsetAndMetadata
+import org.apache.kafka.clients.consumer.{ConsumerConfig, OffsetAndMetadata}
 import org.apache.kafka.common.TopicPartition
 
 import scala.concurrent.duration.FiniteDuration
@@ -77,4 +79,31 @@ class KafkaConsumer[F[_]](config: KafkaConsumerConfiguration,
 
   def resource: Resource[F, Unit] =
     Resource.make(start)(identity).void
+}
+
+object KafkaConsumer {
+
+  def resource[F[_]](builder: KafkaConsumerBuilder[F])(implicit F: Concurrent[F],
+                                                       CS: ContextShift[F]): Resource[F, KafkaConsumer[F]] =
+    for {
+      config <- Resource.liftF(F.fromEither {
+        if (builder.properties.isEmpty) KafkaConsumerConfiguration.load
+        else KafkaConsumerConfiguration.loadFrom(builder.properties)
+      })
+      properties <- Resource.liftF(F.delay {
+        val p = config.properties
+        p.putIfAbsent(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
+        p.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false")
+        p.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+              "org.apache.kafka.common.serialization.ByteArrayDeserializer")
+        p.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+              "org.apache.kafka.common.serialization.ByteArrayDeserializer")
+        p
+      })
+      es <- Resource.make(F.delay(Executors.newCachedThreadPool()))(e => F.delay(e.shutdown()))
+      blocker = Blocker.liftExecutorService(es)
+      consumer <- Resource.make(ConsumerEffect[F](properties, blocker))(_.close())
+      c = new KafkaConsumer[F](config, builder.pollTimeout, builder.subscription, consumer, builder.recordConsumer)
+      _ <- c.resource
+    } yield c
 }

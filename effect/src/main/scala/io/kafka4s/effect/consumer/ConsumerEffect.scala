@@ -1,7 +1,7 @@
 package io.kafka4s.effect.consumer
 
 import java.time.{Duration => JDuration}
-import java.util.{Collection, Properties}
+import java.util.Properties
 
 import cats.effect._
 import cats.implicits._
@@ -22,15 +22,15 @@ class ConsumerEffect[F[_]] private (consumer: DefaultConsumer, blocker: Blocker,
   implicit F: Sync[F],
   CS: ContextShift[F]) {
 
-  // TODO
+  // TODO: Allow rebalance callbacks
   implicit def rebalanceListener(cb: ConsumerRebalance => F[Unit]): ConsumerRebalanceListener =
     new ConsumerRebalanceListener() {
 
-      def onPartitionsRevoked(partitions: Collection[TopicPartition]): Unit = {
+      def onPartitionsRevoked(partitions: java.util.Collection[TopicPartition]): Unit = {
         cb(ConsumerRebalance.PartitionsRevoked(partitions.asScala.toSeq))
       }
 
-      def onPartitionsAssigned(partitions: Collection[TopicPartition]): Unit = {
+      def onPartitionsAssigned(partitions: java.util.Collection[TopicPartition]): Unit = {
         cb(ConsumerRebalance.PartitionsAssigned(partitions.asScala.toSeq))
       }
     }

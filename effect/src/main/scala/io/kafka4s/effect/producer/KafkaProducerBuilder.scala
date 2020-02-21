@@ -16,12 +16,7 @@ case class KafkaProducerBuilder[F[_]](properties: Properties) {
     copy(properties = config.mapToProperties(properties))
 
   def resource(implicit F: Concurrent[F]): Resource[F, KafkaProducer[F]] =
-    for {
-      config <- Resource.liftF(F.fromEither {
-        if (properties.isEmpty) KafkaProducerConfiguration.load else KafkaProducerConfiguration.loadFrom(properties)
-      })
-      producer <- Resource.make(ProducerEffect[F](config.toProducer))(_.close)
-    } yield new KafkaProducer[F](producer)
+    KafkaProducer.resource[F](builder = this)
 }
 
 object KafkaProducerBuilder {

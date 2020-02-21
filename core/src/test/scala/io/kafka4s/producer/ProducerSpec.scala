@@ -4,7 +4,7 @@ import java.time.Instant
 
 import cats.Id
 import cats.data.Kleisli
-import io.kafka4s.producer.Return.Ack
+import Return.Ack
 import io.kafka4s.serdes._
 import io.kafka4s.test.UnitSpec
 
