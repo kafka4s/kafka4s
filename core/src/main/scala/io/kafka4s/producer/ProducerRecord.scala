@@ -35,6 +35,14 @@ object ProducerRecord {
       partition  = if (record.partition() == null) None else Some(record.partition())
     )
 
+  def apply[F[_]](record: Record[F]): ProducerRecord[F] = ProducerRecord[F](
+    topic      = record.topic,
+    keyBytes   = record.keyBytes,
+    valueBytes = record.valueBytes,
+    headers    = record.headers,
+    partition  = None,
+  )
+
   def of[F[_]]: RecordPartiallyApplied[F] = new RecordPartiallyApplied[F]
 
   private[kafka4s] final class RecordPartiallyApplied[F[_]](val dummy: Boolean = false) extends AnyVal {
