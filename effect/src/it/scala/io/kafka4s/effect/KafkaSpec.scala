@@ -2,7 +2,7 @@ package io.kafka4s.effect
 
 import cats.effect.concurrent.Deferred
 import cats.effect.{ContextShift, IO, Resource, Timer}
-import io.kafka4s.{producer, Producer}
+import io.kafka4s.Producer
 import io.kafka4s.consumer._
 import io.kafka4s.effect.admin.KafkaAdminBuilder
 import io.kafka4s.effect.consumer.KafkaConsumerBuilder
@@ -31,7 +31,7 @@ class KafkaSpec extends AnyFlatSpec with Matchers {
     case msg => maybeRecord.complete(msg)
   }
 
-  def withEnvironment[A](test: (producer.Producer[IO], Deferred[IO, ConsumerRecord[IO]]) => IO[A]): A = {
+  def withEnvironment[A](test: (Producer[IO], Deferred[IO, ConsumerRecord[IO]]) => IO[A]): A = {
     for {
       admin <- KafkaAdminBuilder[IO].resource
       _     <- Resource.make(admin.createTopics(Seq(new NewTopic(fooTopic, 1, 1))))(_ => admin.deleteTopics(Seq(fooTopic)))

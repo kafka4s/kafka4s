@@ -1,11 +1,9 @@
 package io.kafka4s.effect.consumer
 
 import java.util.Properties
-import java.util.concurrent.Executors
 
 import cats.ApplicativeError
 import cats.effect._
-import cats.implicits._
 import io.kafka4s.effect.config
 import io.kafka4s.RecordConsumer
 import io.kafka4s.consumer._

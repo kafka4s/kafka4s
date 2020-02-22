@@ -11,14 +11,15 @@ class KafkaConsumerConfigurationSpec extends UnitSpec {
   props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
   props.put(ConsumerConfig.GROUP_ID_CONFIG, "test")
 
-  "$.load" should "do something" ignore {
-    val config = SyncIO.fromEither(KafkaConsumerConfiguration.load).unsafeRunSync()
-    config.bootstrapServers shouldBe Seq("foo")
-  }
-
   "$.loadFrom" should "extract the bootstrap servers and group id from the properties" in {
     val config = SyncIO.fromEither(KafkaConsumerConfiguration.loadFrom(props)).unsafeRunSync()
     config.bootstrapServers shouldBe Seq("localhost:9092")
     config.groupId shouldBe "test"
+  }
+
+  "$.load" should "load the configuration from the HOCON file" in {
+    val config = SyncIO.fromEither(KafkaConsumerConfiguration.load).unsafeRunSync()
+    config.bootstrapServers shouldBe Seq("config:9092")
+    config.groupId shouldBe "config-test"
   }
 }

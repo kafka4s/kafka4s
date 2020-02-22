@@ -32,7 +32,7 @@ package object config extends GetterImplicits {
           props
       }
 
-  implicit class PropertiesOps(val properties: Properties) {
-    def getter[T](key: String)(implicit getter: Getter[T]): Getter.Result[T] = getter.get(properties, key)
+  implicit class PropertiesOps(val properties: Properties) extends AnyVal {
+    def getter[T](key: String)(implicit G: Getter[T]): Getter.Result[T] = G.get(properties, key)
   }
 }
