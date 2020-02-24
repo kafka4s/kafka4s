@@ -1,5 +1,7 @@
 package io.kafka4s.serdes
 
+import cats.Alternative
+
 trait Serde[T] extends Serializer[T] with Deserializer[T]
 
 object Serde {

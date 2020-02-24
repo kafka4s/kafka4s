@@ -3,7 +3,7 @@ package io.kafka4s.common
 import java.util.Base64
 
 import cats.implicits._
-import cats.{ApplicativeError, Show}
+import cats.{ApplicativeError, Contravariant, Show}
 import io.kafka4s.serdes.Deserializer
 
 trait Record[F[_]] {
@@ -30,5 +30,5 @@ object Record {
   private val b64 = Base64.getUrlEncoder.withoutPadding()
 
   implicit def show[F[_]]: Show[Record[F]] =
-    (record) => s"[${record.topic}#${b64.encodeToString(record.keyBytes ++ record.valueBytes)}]"
+    record => s"[${record.topic}#${b64.encodeToString(record.keyBytes ++ record.valueBytes)}]"
 }

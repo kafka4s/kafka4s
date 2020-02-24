@@ -1,6 +1,7 @@
 package io.kafka4s.consumer
 
 import cats.data.{Kleisli, OptionT}
+import cats.kernel.Monoid
 import cats.{ApplicativeError, Monad, Show}
 import io.kafka4s.consumer.Return.{Ack, Err}
 
@@ -29,4 +30,13 @@ object Consumer {
 
   implicit def show[F[_]](implicit S: Show[ConsumerRecord[F]]): Show[Return[F]] =
     (`return`: Return[F]) => S.show(`return`.record)
+
+  implicit def monoid[F[_]: Monad] = new Monoid[Consumer[F]] {
+
+    override def empty: Consumer[F] = Consumer.empty[F]
+
+    override def combine(x: Consumer[F], y: Consumer[F]): Consumer[F] = Kleisli { record =>
+      OptionT(x.apply(record).value) orElse OptionT(y.apply(record).value)
+    }
+  }
 }

@@ -3,6 +3,7 @@ package io.kafka4s.producer
 import cats.MonadError
 import cats.data.Kleisli
 import cats.implicits._
+import io.kafka4s.common.Record
 import io.kafka4s.consumer.ConsumerRecord
 import io.kafka4s.serdes.Serializer
 
@@ -51,4 +52,10 @@ trait Producer[F[_]] {
       )
     )
   }
+
+  final def send(record: ProducerRecord[F]): F[Return[F]] =
+    send1(record)
+
+  final def send(record: Record[F]): F[Return[F]] =
+    send1(ProducerRecord[F](record))
 }
