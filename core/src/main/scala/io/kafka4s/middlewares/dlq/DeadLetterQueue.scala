@@ -22,13 +22,10 @@ class DeadLetterQueue[F[_]] private (producer: Producer[F], dlq: DeadLetter[F])(
 
 object DeadLetterQueue {
 
-  def apply[F[_]: MonadError[*[_], Throwable]](producer: Producer[F], prefix: String = "dlq")(
+  def apply[F[_]: MonadError[*[_], Throwable]](producer: Producer[F], topicSuffix: String = "-dlq")(
     consumer: Consumer[F]): Consumer[F] =
-    new DeadLetterQueue(producer, DeadLetter[F](prefix))
+    new DeadLetterQueue(producer, DeadLetter[F](topicSuffix))
       .apply(consumer)
-
-  def apply[F[_]: MonadError[*[_], Throwable]](producer: Producer[F])(consumer: Consumer[F]): Consumer[F] =
-    new DeadLetterQueue(producer, DeadLetter[F]).apply(consumer)
 
   def apply[F[_]: MonadError[*[_], Throwable]](producer: Producer[F], dlq: DeadLetter[F])(
     consumer: Consumer[F]): Consumer[F] =

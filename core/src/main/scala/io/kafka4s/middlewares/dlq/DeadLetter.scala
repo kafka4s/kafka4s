@@ -15,9 +15,6 @@ object DeadLetter {
 
   def prefixed(prefix: String): String => String = root => s"$root$prefix"
 
-  def apply[F[_]: MonadError[*[_], Throwable]]: DeadLetter[F] =
-    DeadLetter[F](prefix = "-dlq")
-
   def apply[F[_]: MonadError[*[_], Throwable]](prefix: String): DeadLetter[F] =
     DeadLetter[F](prefixed(prefix))
 

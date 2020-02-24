@@ -2,6 +2,7 @@ package io.kafka4s.middlewares.dlq
 
 import cats.data.Kleisli
 import cats.implicits._
+import io.kafka4s.common.Record
 import io.kafka4s.consumer.{Consumer, ConsumerRecord, Return => ConsumerReturn}
 import io.kafka4s.dsl._
 import io.kafka4s.producer.{Producer, ProducerRecord, Return => ProducerReturn}
@@ -56,4 +57,46 @@ class DeadLetterQueueSpec extends UnitSpec { self =>
       ack2 shouldBe ConsumerReturn.Ack(record2)
     }
   }
+
+  it should "allow the customization of the topic name by adding a dead letter name suffix" in eitherTest {
+    val dlq = DeadLetterQueue(producer, topicSuffix = "_dlq")(consumer).orNotFound
+    send1
+      .expects(where { record: ProducerRecord[Test] =>
+        record.topic.endsWith("_dlq") &&
+        record.header[String]("X-Exception-Message") == Right(Some("Error: Boom!")) &&
+        record.header[String]("X-Stack-Trace").map(_.nonEmpty) == Right(true)
+      })
+      .returns(())
+      .once()
+
+    for {
+      record <- ConsumerRecord.of[Test]("boom" -> "You are terminated!")
+      ack    <- dlq.apply(record)
+    } yield {
+      ack shouldBe ConsumerReturn.Ack(record)
+    }
+  }
+
+  it should "allow complete customization of the dead letter record" in eitherTest {
+    val builder = new DeadLetter[Test] {
+      def build(record: Record[Test], throwable: Throwable): Test[Record[Test]] =
+        Right(ProducerRecord[Test](record).copy("all-dlq-msgs"))
+    }
+
+    val dlq = DeadLetterQueue(producer, builder)(consumer).orNotFound
+    send1
+      .expects(where { record: ProducerRecord[Test] =>
+        record.topic == "all-dlq-msgs"
+      })
+      .returns(())
+      .once()
+
+    for {
+      record <- ConsumerRecord.of[Test]("boom" -> "You are terminated!")
+      ack    <- dlq.apply(record)
+    } yield {
+      ack shouldBe ConsumerReturn.Ack(record)
+    }
+  }
+
 }
