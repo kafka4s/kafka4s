@@ -15,14 +15,16 @@ private[kafka4s] trait DslConsumer extends ConsumerImplicits {
   }
 
   /**
-    * Pattern matching for Record topic
+    * Pattern matching for Record topic in both batch and single
     */
   object Topic {
     def unapply[F[_]](record: Record[F]): Option[String] = Some(record.topic)
+
+    def unapply[F[_]](records: NonEmptyList[Record[F]]): Option[String] = Some(records.head.topic)
   }
 
   /**
-    * Pattern matching for a batch of Record topic
+    * Pattern matching for a batch of Records topic
     */
   object BatchTopic {
     def unapply[F[_]](records: NonEmptyList[Record[F]]): Option[String] = Some(records.head.topic)
