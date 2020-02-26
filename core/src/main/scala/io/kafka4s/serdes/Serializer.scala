@@ -1,7 +1,7 @@
 package io.kafka4s.serdes
 
-import cats.Alternative
 import cats.implicits._
+import cats.{Contravariant, SemigroupK}
 
 trait Serializer[A] {
   def serialize(value: A): Result[Array[Byte]]
@@ -19,19 +19,14 @@ object Serializer {
       def serialize(in: A): Result[Array[Byte]] = f(in)
     }
 
-//  implicit val alternative = new Alternative[Serializer] {
-//    def pure[A](a: A): Serializer[A] = Serializer.from(Function.const(Right(a)))
-//
-//    def empty[A]: Serializer[A] = Serializer.from(Function.const(Right(Array.emptyByteArray)))
-//
-//    def combineK[A](l: Serializer[A], r: Serializer[A]): Serializer[A] =
-//      new Serializer[A] {
-//        def serialize(in: A): Result[Array[Byte]] = l.serialize(in) orElse r.serialize(in)
-//      }
-//
-//    def ap[A, B](ff: Serializer[A => B])(fa: Serializer[A]): Serializer[B] =
-//      new Serializer[B] {
-//        def serialize(in: A): Result[Array[Byte]] = fa.serialize(in) ap ff.serialize(in)
-//      }
-//  }
+  implicit val serializerInstances = new Contravariant[Serializer] with SemigroupK[Serializer] {
+
+    def contramap[A, B](fa: Serializer[A])(f: B => A): Serializer[B] = new Serializer[B] {
+      def serialize(value: B): Result[Array[Byte]] = fa.serialize(f(value))
+    }
+
+    def combineK[A](x: Serializer[A], y: Serializer[A]): Serializer[A] = new Serializer[A] {
+      def serialize(value: A): Result[Array[Byte]] = x.serialize(value) orElse y.serialize(value)
+    }
+  }
 }

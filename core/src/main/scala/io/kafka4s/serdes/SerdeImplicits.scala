@@ -6,6 +6,7 @@ import java.util.UUID
 import cats.implicits._
 
 private[kafka4s] trait SerdeImplicits {
+
   implicit def optionSerde[T](implicit serde: Serde[T]): Serde[Option[T]] = new Serde[Option[T]] {
     override def deserialize(value: Array[Byte]): Result[Option[T]] =
       Option(value).filter(_.nonEmpty).traverse(serde.deserialize)
