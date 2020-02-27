@@ -19,8 +19,6 @@ private[kafka4s] trait DslConsumer extends ConsumerImplicits {
     */
   object Topic {
     def unapply[F[_]](record: Record[F]): Option[String] = Some(record.topic)
-
-    def unapply[F[_]](records: NonEmptyList[Record[F]]): Option[String] = Some(records.head.topic)
   }
 
   /**

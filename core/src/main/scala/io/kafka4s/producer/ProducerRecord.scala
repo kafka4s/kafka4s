@@ -43,9 +43,9 @@ object ProducerRecord {
     partition  = None,
   )
 
-  def of[F[_]]: RecordPartiallyApplied[F] = new RecordPartiallyApplied[F]
+  def of[F[_]]: ProducerRecordPartiallyApplied[F] = new ProducerRecordPartiallyApplied[F]
 
-  private[kafka4s] final class RecordPartiallyApplied[F[_]](val dummy: Boolean = false) extends AnyVal {
+  private[kafka4s] final class ProducerRecordPartiallyApplied[F[_]](val dummy: Boolean = false) extends AnyVal {
 
     def apply[T: Serializer](message: (String, T))(implicit F: ApplicativeError[F, Throwable]): F[ProducerRecord[F]] = {
       apply(message._1, message._2)

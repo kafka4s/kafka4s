@@ -6,32 +6,38 @@ import cats.data.Kleisli
 import cats.effect.{Concurrent, Resource, Sync}
 import cats.implicits._
 import io.kafka4s.common.ToKafka
+import io.kafka4s.effect.log.Logger
+import io.kafka4s.effect.log.impl.Slf4jLogger
 import io.kafka4s.producer.{DefaultProducerRecord, Producer, ProducerRecord, Return}
 import org.apache.kafka.clients.producer.ProducerConfig
 
-class KafkaProducer[F[_]](config: KafkaProducerConfiguration, producer: ProducerEffect[F])(implicit F: Sync[F])
+class KafkaProducer[F[_]](config: KafkaProducerConfiguration, producer: ProducerEffect[F], logger: Logger[F])(
+  implicit F: Sync[F])
     extends Producer[F] {
 
   def atomic[A](fa: F[A]): F[A] = producer.transaction(fa)
 
   /**
-    * The side-effect of sending a producer record
+    * An effect that produces a record to Kafka and outputs its status
     */
   def send1: Kleisli[F, ProducerRecord[F], Return[F]] = Kleisli { record =>
     for {
       producerRecord <- F.delay(ToKafka[ProducerRecord[F]].transform(record))
       metadata       <- producer.send(producerRecord.asInstanceOf[DefaultProducerRecord]).attempt
-    } yield
-      metadata match {
-        case Right(m) =>
+      output = metadata.fold(
+        e => Return.Err(record, e),
+        m =>
           Return.Ack(record,
                      m.partition(),
                      Option(m.offset()).filter(_ => m.hasOffset),
                      Option(m.timestamp()).filter(_ => m.hasTimestamp).map(Instant.ofEpochMilli))
+      )
+      _ <- metadata.fold(
+        e => logger.error(s"Could not send message [${record.show}]", e),
+        _ => logger.debug(s"Message sent successfully [${output.asInstanceOf[Return.Ack[F]].show}]")
+      )
+    } yield output
 
-        case Left(ex) =>
-          Return.Err(record, ex)
-      }
   }
 }
 
@@ -52,5 +58,6 @@ object KafkaProducer {
         p
       })
       producer <- Resource.make(ProducerEffect[F](properties))(_.close)
-    } yield new KafkaProducer[F](config, producer)
+      logger   <- Resource.liftF(Slf4jLogger[F, KafkaProducer[Any]])
+    } yield new KafkaProducer[F](config, producer, logger)
 }

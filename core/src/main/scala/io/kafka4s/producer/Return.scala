@@ -18,7 +18,7 @@ object Return {
   final case class Err[F[_]](record: ProducerRecord[F], ex: Throwable) extends Return[F]
 
   implicit def ackShow[F[_]]: Show[Ack[F]] =
-    (result: Ack[F]) => s"[${result.record.topic}-${result.partition}@${result.offset.getOrElse(-1)}]"
+    (result: Ack[F]) => s"${result.record.topic}-${result.partition}${result.offset.map(n => s"@$n").getOrElse("")}"
 
   implicit def errShow[F[_]](implicit S: Show[ProducerRecord[F]]): Show[Err[F]] =
     (result: Err[F]) => S.show(result.record)

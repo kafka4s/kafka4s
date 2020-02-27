@@ -7,18 +7,19 @@ import cats.effect.concurrent.Ref
 import cats.implicits._
 import io.kafka4s.RecordConsumer
 import io.kafka4s.consumer.{ConsumerRecord, DefaultConsumerRecord, Return, Subscription}
-import io.kafka4s.effect.BANNER
-import io.kafka4s.effect.log.Log
+import io.kafka4s.effect.log.Logger
+import io.kafka4s.effect.log.impl.Slf4jLogger
 import org.apache.kafka.clients.consumer.{ConsumerConfig, OffsetAndMetadata}
 import org.apache.kafka.common.TopicPartition
 
 import scala.concurrent.duration.FiniteDuration
 
 class KafkaConsumer[F[_]](config: KafkaConsumerConfiguration,
+                          consumer: ConsumerEffect[F],
+                          logger: Logger[F],
                           pollTimeout: FiniteDuration,
                           subscription: Subscription,
-                          consumer: ConsumerEffect[F],
-                          recordConsumer: RecordConsumer[F])(implicit F: Concurrent[F], L: Log[F]) {
+                          recordConsumer: RecordConsumer[F])(implicit F: Concurrent[F]) {
 
   private def commit(records: Seq[ConsumerRecord[F]]): F[Unit] =
     if (records.isEmpty) F.unit
@@ -28,32 +29,28 @@ class KafkaConsumer[F[_]](config: KafkaConsumerConfiguration,
           new TopicPartition(record.topic, record.partition) -> new OffsetAndMetadata(record.offset + 1L)
         })
         _ <- consumer.commit(offsets.toMap)
-        _ <- L.debug(s"Committing records [${records.map(_.show).mkString(", ")}]")
+        _ <- logger.debug(s"Offset committed for records [${records.map(_.show).mkString(", ")}]")
       } yield ()
 
   private def consume1(record: DefaultConsumerRecord): F[Return[F]] =
     for {
       r <- recordConsumer.apply(ConsumerRecord[F](record))
       _ <- r match {
-        case Return.Ack(r)     => L.debug(s"Record [${r.show}] processed successfully")
-        case Return.Err(r, ex) => L.error(s"Error processing [${r.show}]", ex)
+        case Return.Ack(r)     => logger.debug(s"Record [${r.show}] processed successfully")
+        case Return.Err(r, ex) => logger.error(s"Error processing [${r.show}]", ex)
       }
     } yield r
 
   private def consume(records: Iterable[DefaultConsumerRecord]): F[Unit] =
     for {
       r <- records.toVector.traverse(consume1)
-      a = r
-        .filter {
-          case Return.Ack(_) => true
-          case _             => false
-        }
-        .map(_.record)
+      a = r.filter(_.isInstanceOf[Return.Ack[F]]).map(_.record)
       _ <- commit(a)
     } yield ()
 
   private def fetch(exitSignal: Ref[F, Boolean]): F[Unit] = {
     val loop = for {
+      _       <- logger.trace("Polling records...")
       records <- consumer.poll(pollTimeout)
       _       <- if (records.isEmpty) F.unit else consume(records)
       exit    <- exitSignal.get
@@ -71,10 +68,10 @@ class KafkaConsumer[F[_]](config: KafkaConsumerConfiguration,
   def start: F[CancelToken[F]] =
     for {
       exitSignal <- Ref.of[F, Boolean](false)
-      _          <- L.info(BANNER)
-      _          <- L.info(s"Kafka connecting to [${config.bootstrapServers}]")
-      _          <- subscribe
-      fiber      <- F.start(fetch(exitSignal))
+      _ <- logger.info(
+        s"KafkaConsumer connecting to [${config.bootstrapServers.mkString(",")}] with group id [${config.groupId}]")
+      _     <- subscribe
+      fiber <- F.start(fetch(exitSignal))
     } yield exitSignal.set(true) >> fiber.join
 
   def resource: Resource[F, Unit] =
@@ -103,7 +100,13 @@ object KafkaConsumer {
       es <- Resource.make(F.delay(Executors.newCachedThreadPool()))(e => F.delay(e.shutdown()))
       blocker = Blocker.liftExecutorService(es)
       consumer <- Resource.make(ConsumerEffect[F](properties, blocker))(_.close())
-      c = new KafkaConsumer[F](config, builder.pollTimeout, builder.subscription, consumer, builder.recordConsumer)
+      logger   <- Resource.liftF(Slf4jLogger[F, KafkaConsumer[Any]])
+      c = new KafkaConsumer[F](config,
+                               consumer,
+                               logger,
+                               builder.pollTimeout,
+                               builder.subscription,
+                               builder.recordConsumer)
       _ <- c.resource
     } yield c
 }

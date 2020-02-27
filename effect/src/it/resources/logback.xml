@@ -3,7 +3,7 @@
   <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
 
   <logger name="org.apache.kafka" level="ERROR" />
-  <logger name="com.tnt.common.kafka" level="DEBUG" />
+  <logger name="io.kafka4s.effect" level="DEBUG" />
 
   <root level="${LOGLEVEL_ROOT:-INFO}">
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
