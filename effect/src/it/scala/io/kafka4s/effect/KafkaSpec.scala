@@ -52,7 +52,7 @@ class KafkaSpec extends AnyFlatSpec with Matchers { self =>
       for {
         t1 <- Clock[IO].monotonic(MILLISECONDS)
         t = FiniteDuration(t1 - t0, SECONDS)
-        _ <- IO(println(s"Test completed in ${t.show}"))
+        _ <- IO(println(s"Test completed in $t"))
       } yield ())
 
   def prepareTopics(topics: Seq[String]): Resource[IO, Unit] =
@@ -138,7 +138,9 @@ class KafkaSpec extends AnyFlatSpec with Matchers { self =>
     (producer, records) =>
       for {
         _ <- (1 to 50).toList.traverse(n => producer.send(foo, value = s"bar #$n"))
+        _ <- Timer[IO].sleep(5.millis)
         _ <- producer.send(boom, value = "All your base are belong to us.")
+        _ <- Timer[IO].sleep(5.millis)
         _ <- (51 to 100).toList.traverse(n => producer.send(foo, value = s"bar #$n"))
         _ <- waitUntil(10.seconds) {
           records.get.map(_.length == 100)
