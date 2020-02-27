@@ -30,15 +30,28 @@ lazy val kafka4s = project.in(file("."))
     skip in publish := true,
     description := "A minimal Scala-idiomatic library for Kafka",
   )
-  .aggregate(core, effect)
+  .aggregate(docs, core, effect)
 
-lazy val docs = project.in(file("docs"))
-  .dependsOn(kafka4s)
+lazy val docs = project.in(file("."))
   .enablePlugins(MicrositesPlugin)
   .settings(
     micrositeName := "Kafka4s",
     micrositeDescription := "",
-    micrositeUrl := ""
+    micrositeUrl := "https://kafka4s.github.io/kafka4s",
+    micrositeBaseUrl := "/kafka4s",
+    micrositePalette := Map(
+      "brand-primary"     -> "#E05236",
+      "brand-secondary"   -> "#3F3242",
+      "brand-tertiary"    -> "#2D232F",
+      "gray-dark"         -> "#453E46",
+      "gray"              -> "#837F84",
+      "gray-light"        -> "#E3E2E3",
+      "gray-lighter"      -> "#F4F3F4",
+      "white-color"       -> "#FFFFFF"
+    ),
+    mdocVariables := Map(
+      "VERSION" -> version.value
+    )
   )
 
 lazy val core = project.in(file("core"))
