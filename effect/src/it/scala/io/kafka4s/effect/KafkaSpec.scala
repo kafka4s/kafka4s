@@ -41,7 +41,7 @@ class KafkaSpec extends AnyFlatSpec with Matchers { self =>
     for {
       isReady <- loop.start
       _ <- IO.race(Timer[IO].sleep(duration), isReady.join).flatMap {
-        case Left(_)  => isReady.cancel.start >> IO.raiseError(new TimeoutException(duration.toString()))
+        case Left(_)  => isReady.cancel >> IO.raiseError(new TimeoutException(duration.toString()))
         case Right(_) => IO.unit
       }
     } yield ()

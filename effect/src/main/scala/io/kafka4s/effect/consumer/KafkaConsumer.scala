@@ -74,8 +74,11 @@ class KafkaConsumer[F[_]](config: KafkaConsumerConfiguration,
       fiber <- F.start(fetch(exitSignal))
     } yield exitSignal.set(true) >> fiber.join
 
+  def close: F[Unit] =
+    logger.info("Stopping KafkaConsumer...")
+
   def resource: Resource[F, Unit] =
-    Resource.make(start)(identity).void
+    Resource.make(start)(close >> _).void
 }
 
 object KafkaConsumer {
@@ -99,7 +102,7 @@ object KafkaConsumer {
       })
       es <- Resource.make(F.delay(Executors.newCachedThreadPool()))(e => F.delay(e.shutdown()))
       blocker = Blocker.liftExecutorService(es)
-      consumer <- Resource.make(ConsumerEffect[F](properties, blocker))(_.close())
+      consumer <- Resource.make(ConsumerEffect[F](properties, blocker))(c => c.wakeup >> c.close())
       logger   <- Resource.liftF(Slf4jLogger[F, KafkaConsumer[Any]])
       c = new KafkaConsumer[F](config,
                                consumer,

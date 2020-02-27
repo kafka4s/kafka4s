@@ -37,8 +37,16 @@ class KafkaProducer[F[_]](config: KafkaProducerConfiguration, producer: Producer
         _ => logger.debug(s"Message sent successfully [${output.asInstanceOf[Return.Ack[F]].show}]")
       )
     } yield output
-
   }
+
+  def resource: Resource[F, KafkaProducer[F]] =
+    for {
+      _ <- Resource.make {
+        logger.info(s"KafkaProducer connecting to [${config.bootstrapServers.mkString(",")}]")
+      } { _ =>
+        logger.info("Stopping KafkaProducer...")
+      }
+    } yield this
 }
 
 object KafkaProducer {
@@ -59,5 +67,7 @@ object KafkaProducer {
       })
       producer <- Resource.make(ProducerEffect[F](properties))(_.close)
       logger   <- Resource.liftF(Slf4jLogger[F, KafkaProducer[Any]])
-    } yield new KafkaProducer[F](config, producer, logger)
+      p = new KafkaProducer[F](config, producer, logger)
+      _ <- p.resource
+    } yield p
 }
