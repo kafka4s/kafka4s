@@ -3,7 +3,7 @@ package io.kafka4s.common
 import java.util.Base64
 
 import cats.implicits._
-import cats.{ApplicativeError, Contravariant, Show}
+import cats.{ApplicativeError, Show}
 import io.kafka4s.serdes.Deserializer
 
 trait Record[F[_]] {

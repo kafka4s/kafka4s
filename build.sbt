@@ -1,6 +1,6 @@
 import sbt._
 
-ThisBuild / scalaVersion           := "2.12.8"
+ThisBuild / scalaVersion           := "2.12.10"
 ThisBuild / version                := "0.1.0"
 ThisBuild / organization           := "io.kafka4s"
 ThisBuild / organizationName       := "Kafka4s"
@@ -9,21 +9,18 @@ ThisBuild / turbo                  := true
 Global / concurrentRestrictions := Seq(Tags.limitAll(1))
 
 val Dependencies = new {
-  val kafkaClients = "org.apache.kafka" % "kafka-clients"     % "2.3.0"
-  
-  val catsCore = "org.typelevel"   %% "cats-core"             % "1.6.0"
-  val catsEffect = "org.typelevel" %% "cats-effect"           % "1.4.0"
-
-  val config = "com.typesafe"      % "config"                 % "1.4.0"
-
-  val slf4j = "org.slf4j"          % "slf4j-api"              % "1.7.25"
-  val logback = "ch.qos.logback"   % "logback-classic"        % "1.2.3"
-
-  val scalaTest = "org.scalatest" %% "scalatest"              % "3.1.1"
-  val scalaMock = "org.scalamock" %% "scalamock"              % "4.4.0"
-
-  val betterMonadicFor = "com.olegpy" %% "better-monadic-for" % "0.3.1"
-  val kindProjector = "org.typelevel" %% "kind-projector"    % "0.10.3"
+  val kafkaClients     = "org.apache.kafka" % "kafka-clients"       % "2.3.0"
+  val catsCore         = "org.typelevel"    %% "cats-core"          % "1.6.0"
+  val catsEffect       = "org.typelevel"    %% "cats-effect"        % "1.4.0"
+  val catsRetry        = "com.github.cb372" %% "cats-retry"         % "1.1.0"
+  val config           = "com.typesafe"     % "config"              % "1.4.0"
+  val slf4j            = "org.slf4j"        % "slf4j-api"           % "1.7.25"
+  val logback          = "ch.qos.logback"   % "logback-classic"     % "1.2.3"
+  val scalaTest        = "org.scalatest"    %% "scalatest"          % "3.1.1"
+  val scalaMock        = "org.scalamock"    %% "scalamock"          % "4.4.0"
+  val scalaReflect     = "org.scala-lang"    % "scala-reflect"
+  val betterMonadicFor = "com.olegpy"       %% "better-monadic-for" % "0.3.1"
+  val kindProjector    = "org.typelevel"    %% "kind-projector"     % "0.10.3"
 }
 
 lazy val kafka4s = project.in(file("."))
@@ -35,12 +32,22 @@ lazy val kafka4s = project.in(file("."))
   )
   .aggregate(core, effect)
 
+lazy val docs = project.in(file("docs"))
+  .dependsOn(kafka4s)
+  .enablePlugins(MicrositesPlugin)
+  .settings(
+    micrositeName := "Kafka4s",
+    micrositeDescription := "",
+    micrositeUrl := ""
+  )
+
 lazy val core = project.in(file("core"))
   .settings(
     commonSettings,
     libraryDependencies ++= Seq(
       Dependencies.kafkaClients,
-      Dependencies.catsCore
+      Dependencies.catsCore,
+      Dependencies.catsRetry,
     )
   )
 
@@ -54,7 +61,7 @@ lazy val effect = project.in(file("effect"))
       Dependencies.catsEffect,
       Dependencies.config,
       Dependencies.slf4j,
-      Dependencies.logback,
+      Dependencies.logback % IntegrationTest,
       Dependencies.scalaTest % IntegrationTest,
     )
   )
@@ -65,6 +72,7 @@ lazy val commonSettings = Seq(
   parallelExecution in Test := false,
   parallelExecution in IntegrationTest := false,
   libraryDependencies ++= Seq(
+    Dependencies.scalaReflect % scalaVersion.value,
     Dependencies.scalaMock % Test,
     Dependencies.scalaTest % Test,
     compilerPlugin(Dependencies.betterMonadicFor),

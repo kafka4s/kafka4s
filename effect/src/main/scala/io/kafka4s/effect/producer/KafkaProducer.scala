@@ -66,7 +66,7 @@ object KafkaProducer {
         p
       })
       producer <- Resource.make(ProducerEffect[F](properties))(_.close)
-      logger   <- Resource.liftF(Slf4jLogger[F, KafkaProducer[Any]])
+      logger   <- Resource.liftF(Slf4jLogger[F].of[KafkaProducer[Any]])
       p = new KafkaProducer[F](config, producer, logger)
       _ <- p.resource
     } yield p

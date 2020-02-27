@@ -29,19 +29,23 @@ class ProducerEffect[F[_]](producer: DefaultProducer)(implicit F: Concurrent[F])
       }
     } yield a
 
-  def send(record: DefaultProducerRecord): F[RecordMetadata] = F.async { cb =>
-    producer
-      .send(
-        record,
-        new Callback {
-          def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
-            if (exception == null) cb(Right(metadata))
-            else cb(Left(exception))
-          }
-        }
-      )
-    ()
-  }
+  def send(record: DefaultProducerRecord): F[RecordMetadata] =
+    for {
+      future <- F.start(F.async[RecordMetadata] { cb =>
+        producer
+          .send(
+            record,
+            new Callback {
+              def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
+                if (exception == null) cb(Right(metadata))
+                else cb(Left(exception))
+              }
+            }
+          )
+        ()
+      })
+      metadata <- future.join
+    } yield metadata
 
   def flush: F[Unit]                                      = F.delay(producer.flush())
   def partitionsFor(topic: String): F[Seq[PartitionInfo]] = F.delay(producer.partitionsFor(topic).asScala)

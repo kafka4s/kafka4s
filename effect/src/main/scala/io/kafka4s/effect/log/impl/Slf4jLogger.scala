@@ -24,13 +24,13 @@ object Slf4jLogger {
 
   private[kafka4s] final class Slf4jLoggerPartiallyApplied[F[_]](val dummy: Boolean = false) extends AnyVal {
 
-    def apply(name: String)(implicit F: Sync[F]): F[Slf4jLogger[F]] =
+    def of(name: String)(implicit F: Sync[F]): F[Slf4jLogger[F]] =
       for {
         logger <- F.delay(slf4j.LoggerFactory.getLogger(name))
       } yield new Slf4jLogger(logger)
+
+    def of[A](implicit F: Sync[F], tag: TypeTag[A]): F[Slf4jLogger[F]] = of(typeOf[A].typeSymbol.fullName)
   }
 
   def apply[F[_]] = new Slf4jLoggerPartiallyApplied[F]()
-
-  def apply[F[_], A](implicit F: Sync[F], tag: TypeTag[A]): F[Slf4jLogger[F]] = apply(typeOf[A].typeSymbol.fullName)
 }

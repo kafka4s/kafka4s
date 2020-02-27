@@ -42,10 +42,10 @@ case class KafkaConsumerBuilder[F[_]](pollTimeout: FiniteDuration,
   def withConsumer(consumer: RecordConsumer[F]): Self =
     copy(recordConsumer = consumer)
 
-  def resource(implicit F: Concurrent[F], CS: ContextShift[F]): Resource[F, KafkaConsumer[F]] =
+  def resource(implicit F: Concurrent[F], T: Timer[F], CS: ContextShift[F]): Resource[F, KafkaConsumer[F]] =
     KafkaConsumer.resource[F](builder = this)
 
-  def serve(implicit F: Concurrent[F], CS: ContextShift[F]): F[Unit] = resource.use(_ => F.never)
+  def serve(implicit F: Concurrent[F], T: Timer[F], CS: ContextShift[F]): F[Unit] = resource.use(_ => F.never)
 }
 
 object KafkaConsumerBuilder {

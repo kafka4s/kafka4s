@@ -10,7 +10,7 @@ import io.kafka4s.consumer.{ConsumerRecord, DefaultConsumerRecord, Return, Subsc
 import io.kafka4s.effect.log.Logger
 import io.kafka4s.effect.log.impl.Slf4jLogger
 import org.apache.kafka.clients.consumer.{ConsumerConfig, OffsetAndMetadata}
-import org.apache.kafka.common.TopicPartition
+import org.apache.kafka.common.{KafkaException, TopicPartition}
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -19,7 +19,11 @@ class KafkaConsumer[F[_]](config: KafkaConsumerConfiguration,
                           logger: Logger[F],
                           pollTimeout: FiniteDuration,
                           subscription: Subscription,
-                          recordConsumer: RecordConsumer[F])(implicit F: Concurrent[F]) {
+                          recordConsumer: RecordConsumer[F])(implicit F: Concurrent[F], T: Timer[F]) {
+
+  // TODO: Parametrize the retry policy
+  val retryPolicy: retry.RetryPolicy[F] =
+    retry.RetryPolicies.limitRetries[F](maxRetries = 10) join retry.RetryPolicies.fullJitter(pollTimeout)
 
   private def commit(records: Seq[ConsumerRecord[F]]): F[Unit] =
     if (records.isEmpty) F.unit
@@ -48,6 +52,19 @@ class KafkaConsumer[F[_]](config: KafkaConsumerConfiguration,
       _ <- commit(a)
     } yield ()
 
+  private def logErrors(throwable: Throwable, details: retry.RetryDetails): F[Unit] =
+    details match {
+      case retry.RetryDetails.WillDelayAndRetry(nextDelay, retriesSoFar, _) =>
+        logger.warn(s"Consumer failed unexpectedly $retriesSoFar time(s). Retrying in $nextDelay", throwable)
+      case retry.RetryDetails.GivingUp(totalRetries, totalDelay) =>
+        logger.error(s"Consumer failed after $totalDelay and $totalRetries retries", throwable)
+    }
+
+  private def onKafkaExceptions(throwable: Throwable): Boolean = throwable match {
+    case _: KafkaException => true
+    case _                 => false
+  }
+
   private def fetch(exitSignal: Ref[F, Boolean]): F[Unit] = {
     val loop = for {
       _       <- logger.trace("Polling records...")
@@ -56,7 +73,9 @@ class KafkaConsumer[F[_]](config: KafkaConsumerConfiguration,
       exit    <- exitSignal.get
     } yield exit
 
-    loop.flatMap(exit => if (exit) F.unit else fetch(exitSignal))
+    retry.retryingOnSomeErrors(retryPolicy, onKafkaExceptions, logErrors) {
+      loop.flatMap(exit => if (exit) F.unit else fetch(exitSignal))
+    }
   }
 
   private def subscribe: F[Unit] = subscription match {
@@ -84,6 +103,7 @@ class KafkaConsumer[F[_]](config: KafkaConsumerConfiguration,
 object KafkaConsumer {
 
   def resource[F[_]](builder: KafkaConsumerBuilder[F])(implicit F: Concurrent[F],
+                                                       T: Timer[F],
                                                        CS: ContextShift[F]): Resource[F, KafkaConsumer[F]] =
     for {
       config <- Resource.liftF(F.fromEither {
@@ -103,7 +123,7 @@ object KafkaConsumer {
       es <- Resource.make(F.delay(Executors.newCachedThreadPool()))(e => F.delay(e.shutdown()))
       blocker = Blocker.liftExecutorService(es)
       consumer <- Resource.make(ConsumerEffect[F](properties, blocker))(c => c.wakeup >> c.close())
-      logger   <- Resource.liftF(Slf4jLogger[F, KafkaConsumer[Any]])
+      logger   <- Resource.liftF(Slf4jLogger[F].of[KafkaConsumer[Any]])
       c = new KafkaConsumer[F](config,
                                consumer,
                                logger,
