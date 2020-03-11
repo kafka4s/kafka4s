@@ -18,6 +18,7 @@ services:
       - zk
     ports:
       - 9092:9092
+      - 9093:9093
     command:
       - --override
       - advertised.listeners=INTERNAL://:9093,EXTERNAL://localhost:9092

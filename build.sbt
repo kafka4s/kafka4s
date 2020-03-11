@@ -30,7 +30,7 @@ lazy val kafka4s = project.in(file("."))
     skip in publish := true,
     description := "A minimal Scala-idiomatic library for Kafka",
   )
-  .aggregate(docs, core, effect)
+  .aggregate(core, effect, docs)
 
 lazy val docs = project.in(file("."))
   .enablePlugins(MicrositesPlugin)
